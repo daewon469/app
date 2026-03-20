@@ -28,7 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BusinessPicker from "../components/BusinessMapPicker";
 import ScrollNavigator from "../components/ScrollNavigator";
 import NaverMap from "../components/ui/navermap";
-import { Posts } from "../lib/api";
+import { API_URL, Posts } from "../lib/api";
 import { buildKakaoMapUrl } from "../utils/map";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -449,7 +449,7 @@ export default function AdPostWrite() {
                 const b64 = await FileSystem.readAsStringAsync(imageUri, {
                     encoding: "base64",
                 });
-                const upload = await fetch("https://api.smartgauge.co.kr/upload/base64", {
+                const upload = await fetch(`${API_URL}/upload/base64`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

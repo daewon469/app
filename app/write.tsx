@@ -14,7 +14,7 @@ import BusinessPicker from "../components/BusinessMapPicker";
 import ScrollNavigator from "../components/ScrollNavigator";
 import NaverMap from "../components/ui/navermap";
 import WorkPicker from "../components/WorkMapPicker";
-import { Posts } from "../lib/api";
+import { API_URL, Posts } from "../lib/api";
 import { RootState } from "../store";
 import { setBusinessLocation, setWorkLocation } from "../store/LocationSlice";
 import { buildKakaoMapUrl } from "../utils/map";
@@ -887,7 +887,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         }
         const uri = asset.localUri ?? asset.uri;
         const b64 = await FileSystem.readAsStringAsync(uri, { encoding: "base64" });
-        const upload = await fetch("https://api.smartgauge.co.kr/upload/base64", {
+        const upload = await fetch(`${API_URL}/upload/base64`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -898,7 +898,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         imageUrl = data.url;
       } else if (imageUri && !imageUri.startsWith("http")) {
         const b64 = await FileSystem.readAsStringAsync(imageUri, { encoding: "base64" });
-        const upload = await fetch("https://api.smartgauge.co.kr/upload/base64", {
+        const upload = await fetch(`${API_URL}/upload/base64`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -24,7 +24,7 @@
       },
       "env": {
         "APP_ENV": "preview",
-        "API_BASE_URL": "https://api.smartgauge.co.kr",
+        "API_BASE_URL": "https://api.daewon469.com",
         "NAVER_CLIENT_ID": "eifczgze0p"
       }
     },
@@ -35,7 +35,7 @@
       "android": { "buildType": "app-bundle" },
       "env": {
         "APP_ENV": "production",
-        "API_BASE_URL": "https://api.smartgauge.co.kr",
+        "API_BASE_URL": "https://api.daewon469.com",
         "NAVER_CLIENT_ID": "eifczgze0p"
       }
     }

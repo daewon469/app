@@ -12,7 +12,7 @@ const API_BASE_URL =
 const config: ExpoConfig = {
   name: "분양프로",
   slug: "mvp",
-  version: "1.0.9",
+  version: "1.1.1",
   orientation: "portrait",
   icon: "./assets/images/logo10.png",
   // TossPayments WebView 결제 성공/실패 딥링크 수신용
