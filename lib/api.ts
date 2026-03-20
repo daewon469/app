@@ -1,9 +1,9 @@
 import axios, {
-    AxiosError,
-    AxiosHeaders,
-    AxiosInstance,
-    AxiosResponse,
-    InternalAxiosRequestConfig
+  AxiosError,
+  AxiosHeaders,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig
 } from "axios";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
@@ -13,7 +13,7 @@ const extra: any =
   (Constants as any)?.manifest?.extra ??
   {};
 
-export const API_URL: string = (extra?.apiBaseUrl as string) ?? "https://api.smartgauge.co.kr";
+export const API_URL: string = (extra?.apiBaseUrl as string) ?? "https://api.daewon469.com";
 export type PostInput = Omit<
   Post,
   "id" | "author" | "created_at" | "province" | "city" | "liked" | "other_role_name" | "other_role_fee"

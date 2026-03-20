@@ -3,7 +3,7 @@ import 'dotenv/config';
 
 const projectId = "7e453f68-12ca-4c44-97ae-06a0b7178649";
 const APP_ENV = process.env.APP_ENV ?? "preview";
-const DEFAULT_PROD_API = "https://api.smartgauge.co.kr";
+const DEFAULT_PROD_API = "https://api.daewon469.com";
 const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID ?? "eifczgze0p";
 const KAKAO_MAP_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_MAP_JS_KEY ?? "c53584fc9381455a46f60cbcc6202bb8";
 const API_BASE_URL =
