@@ -4,7 +4,7 @@ import { router, usePathname } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text as RNText, View } from "react-native";
 import { Appbar, Portal } from "react-native-paper";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalBackHandler } from "../../hooks/useModalBackHandler";
 import { Notify } from "../../lib/api";
 import { getSession } from "../../utils/session";
@@ -38,6 +38,7 @@ export default function TopBar() {
   // 상단바 탭(아이콘/라벨) 크기 통일: 기존(대부분 24/13)에서 -1
   const TAB_ICON_SIZE = 23;
   const TAB_LABEL_FONT_SIZE = 15;
+  const HEADER_HEIGHT = 48; // SafeArea(top) 제외 높이
 
   useModalBackHandler(open, () => setOpen(false));
 
@@ -164,14 +165,19 @@ export default function TopBar() {
 
   return (
     <View style={{ position: "relative" }}>
-      <Appbar.Header mode="center-aligned" style={{
-        height: 38,
-        backgroundColor: "#0B1B3A",
-        justifyContent: "flex-start",
-        borderBottomWidth: 1,
-        borderColor: "black",
-        overflow: "visible"
-      }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0B1B3A" }}>
+        <Appbar.Header
+          mode="center-aligned"
+          statusBarHeight={0}
+          style={{
+            height: HEADER_HEIGHT,
+            backgroundColor: "#0B1B3A",
+            justifyContent: "flex-start",
+            borderBottomWidth: 1,
+            borderColor: "black",
+            overflow: "visible",
+          }}
+        >
 
         <Pressable
           onPress={async () => {
@@ -201,8 +207,7 @@ export default function TopBar() {
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 4,
           }}
         >
           <Ionicons name="create" size={TAB_ICON_SIZE} color="white" />
@@ -217,8 +222,7 @@ export default function TopBar() {
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 4,
           }}
         >
           <Ionicons name="megaphone" size={TAB_ICON_SIZE} color="white" />
@@ -233,8 +237,7 @@ export default function TopBar() {
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 4,
           }}
         >
           <Ionicons name="home" size={TAB_ICON_SIZE} color="white" />
@@ -256,8 +259,7 @@ export default function TopBar() {
               flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              paddingVertical: 10,
-              marginTop: -16,
+              paddingVertical: 4,
             }}
           >
             <View style={{ position: "relative", width: 26, height: 26, alignItems: "center", justifyContent: "center" }}>
@@ -296,8 +298,7 @@ export default function TopBar() {
               flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              paddingVertical: 10,
-              marginTop: -16,
+              paddingVertical: 4,
             }}
           >
             <Ionicons name="log-in" size={TAB_ICON_SIZE} color="white" />
@@ -316,8 +317,7 @@ export default function TopBar() {
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            marginTop: -16,
-            paddingVertical: 10,
+            paddingVertical: 4,
           }}
         >
           <Ionicons name="person" size={TAB_ICON_SIZE} color="white" />
@@ -326,7 +326,8 @@ export default function TopBar() {
           </Text>
         </Pressable>
 
-      </Appbar.Header>
+        </Appbar.Header>
+      </SafeAreaView>
 
       <Portal>
         {open && (
@@ -342,14 +343,13 @@ export default function TopBar() {
               style={{
                 position: "absolute",
                 height: 260,
-                top: (insets?.top ?? 0) + 35 + 6,
+                top: (insets?.top ?? 0) + HEADER_HEIGHT + 6,
                 right: 8,
                 width: 260,
                 backgroundColor: "#fff",
                 borderRadius: 12,
                 paddingVertical: 16,
                 paddingHorizontal: 12,
-                marginTop:-16,
                 shadowColor: "#000",
                 shadowOpacity: 0.15,
                 shadowRadius: 10,

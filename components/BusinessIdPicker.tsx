@@ -4,6 +4,7 @@ import { BackHandler, Modal, Pressable, SafeAreaView, Text as RNText, View } fro
 import { WebView } from "react-native-webview";
 import { useDispatch } from "react-redux";
 import { LocationSel } from "../utils/type";
+import { API_URL } from "../lib/api";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -24,7 +25,7 @@ export default function BusinessIdPicker({
   onClose,
   onPick,
   clientId,
-  baseUrl = "https://api.smartgauge.co.kr",
+  baseUrl = API_URL,
   allowedOrigins = [],
   initial,
 }: Props) {

@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
+import { API_URL } from "../../lib/api";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -115,7 +116,7 @@ export default function AddressSection({
   })();
 </script></body></html>
                 `,
-                baseUrl:"https://api.smartgauge.co.kr",
+                baseUrl: API_URL,
               }}
             />
           </View>

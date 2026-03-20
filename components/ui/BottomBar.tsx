@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
 import React, { useState } from "react";
-import { Alert, Pressable, Text as RNText, View } from "react-native";
+import { Alert, Platform, Pressable, Text as RNText, View } from "react-native";
 import { Appbar } from "react-native-paper";
 import { SafeAreaView } from 'react-native-safe-area-context';
  
@@ -29,6 +29,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
   const TAB_LABEL_FONT_SIZE = 15;
   const BAR_BG_COLOR = "#EEF3FF"; // 아주 연한 네이비 톤
   const BAR_FG_COLOR = "#1A2B5F"; // 네이비
+  const BAR_HEIGHT = Platform.OS === "ios" ? 49 : 56; // SafeArea(bottom) 제외 높이(탭바 표준)
 
   // 로그인 판정은 SecureStore의 isLogin("true")만 사용 (토큰/Redux 기반 판정 X)
   React.useEffect(() => {
@@ -88,11 +89,15 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
 
   return (
     <SafeAreaView style={{ paddingBottom: 0 }} edges={['bottom']}>
-      <Appbar.Header mode="center-aligned" style={{
-        height: 38,
-        backgroundColor: BAR_BG_COLOR,
-        justifyContent: "space-around",
-      }}>
+      <Appbar.Header
+        mode="center-aligned"
+        statusBarHeight={0}
+        style={{
+          height: BAR_HEIGHT,
+          backgroundColor: BAR_BG_COLOR,
+          justifyContent: "space-around",
+        }}
+      >
         <Pressable
           onPress={() => {
             if (!isLogin) {
@@ -105,8 +110,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 6,
           }}
         >
           <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
@@ -134,8 +138,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 6,
           }}
         >
           <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
@@ -180,8 +183,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 6,
           }}
         >
           <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
@@ -222,8 +224,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 6,
           }}
         >
           <View
@@ -256,8 +257,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
             flex: 1,
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 10,
-            marginTop: -16,
+            paddingVertical: 6,
           }}
         >
           <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>

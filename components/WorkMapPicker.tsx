@@ -5,6 +5,7 @@ import { WebView } from "react-native-webview";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store";
 import { LocationSel } from "../utils/type";
+import { API_URL } from "../lib/api";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -26,7 +27,7 @@ export default function WorkMapPicker({
   onClose,
   onPick,
   clientId,
-  baseUrl = "https://api.smartgauge.co.kr",
+  baseUrl = API_URL,
   allowedOrigins = [],
   initial,
   business,

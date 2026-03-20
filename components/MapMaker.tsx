@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import { BackHandler, Modal, Pressable, SafeAreaView, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
+import { API_URL } from "../lib/api";
 
 type Marker = { id: string; lat: number; lng: number; title?: string; desc?: string; selected?: boolean };
 type MapViewState = { lat: number; lng: number; level: number };
@@ -41,7 +42,7 @@ export default function MapMaker({
   onMapStateChange,
   externalViewState,
   getRestoreViewState,
-  baseUrl = "https://api.smartgauge.co.kr",
+  baseUrl = API_URL,
   allowedOrigins = [],
   initial,
   showMarkerInfoWindow = true,

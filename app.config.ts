@@ -5,7 +5,7 @@ const projectId = "7e453f68-12ca-4c44-97ae-06a0b7178649";
 const APP_ENV = process.env.APP_ENV ?? "preview";
 const DEFAULT_PROD_API = "https://api.daewon469.com";
 const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID ?? "eifczgze0p";
-const KAKAO_MAP_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_MAP_JS_KEY ?? "c53584fc9381455a46f60cbcc6202bb8";
+const KAKAO_MAP_JS_KEY = process.env.EXPO_PUBLIC_KAKAO_MAP_JS_KEY ?? "6b463e22639b1f1c21a652838d95a99f";
 const API_BASE_URL =
   process.env.API_BASE_URL ?? DEFAULT_PROD_API;
 
@@ -23,6 +23,7 @@ const config: ExpoConfig = {
   newArchEnabled: false,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.smartgauge.bunyangpro",
   },
   android: {
     googleServicesFile: "./google-services.json",
