@@ -1,0 +1,1 @@
+export type LocationSel = { address?: string; lat: number; lng: number };

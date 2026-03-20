@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "621286366842",
+    "project_id": "bunang-1a945",
+    "storage_bucket": "bunang-1a945.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621286366842:android:6743c2c42f9506be4ca5c3",
+        "android_client_info": {
+          "package_name": "com.smartgauge.bunyangpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJR20CEVHRn9KoXd3u2PwLFOGHDls3P6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:621286366842:android:4b425e5b9e453b404ca5c3",
+        "android_client_info": {
+          "package_name": "com.smartgauge.mvp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJR20CEVHRn9KoXd3u2PwLFOGHDls3P6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

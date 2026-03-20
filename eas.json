@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 16.18.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "cache": { "disabled": true },
+      "env": {
+        "APP_ENV": "development",
+        "API_BASE_URL": "http://10.0.2.2:8000"
+      }
+    },
+    "preview": {
+      "distribution": "store",
+      "channel": "preview",
+      "android": {
+        "image": "latest",
+        "ndk": "27.1.12297006",
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_ENV": "preview",
+        "API_BASE_URL": "https://api.smartgauge.co.kr",
+        "NAVER_CLIENT_ID": "eifczgze0p"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "distribution": "store",
+      "channel": "production",
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "APP_ENV": "production",
+        "API_BASE_URL": "https://api.smartgauge.co.kr",
+        "NAVER_CLIENT_ID": "eifczgze0p"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": { "track": "production" }
+    }
+  }
+}
