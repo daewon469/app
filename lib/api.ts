@@ -1022,7 +1022,7 @@ export const Posts = {
     if (opts?.username) params.username = opts.username;
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
-    params.limit = opts?.limit ?? 100; // 기본값 100
+    params.limit = opts?.limit ?? 1000; // 기본값 1000
     if (opts?.province) params.province = opts.province;
     if (opts?.city) params.city = opts.city;
     if (opts?.regions) params.regions = opts.regions;
@@ -1053,7 +1053,7 @@ export const Posts = {
     if (opts?.username) params.username = opts.username;
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
-    params.limit = opts?.limit ?? 100; // 기본값 100
+    params.limit = opts?.limit ?? 1000; // 기본값 1000
     if (opts?.province) params.province = opts.province;
     if (opts?.city) params.city = opts.city;
     if (opts?.regions) params.regions = opts.regions;
@@ -1081,7 +1081,7 @@ export const Posts = {
     const params: Record<string, any> = {
       q: (q || "").trim(),
       post_type: opts?.post_type ?? 1,
-      limit: opts?.limit ?? 50,
+      limit: opts?.limit ?? 1000,
     };
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
@@ -1197,7 +1197,7 @@ export const Posts = {
     const params: Record<string, any> = {};
     if (opts?.username) params.username = opts.username;
     if (opts?.cursor) params.cursor = opts.cursor;
-    if (opts?.limit) params.limit = opts.limit;
+    params.limit = opts?.limit ?? 1000;
     if (opts?.status) params.status = opts.status;
     try {
       const { data } = await api.get(`/community/posts/custom`, { params });

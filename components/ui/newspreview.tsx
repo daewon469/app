@@ -113,7 +113,7 @@ export default function NewsPreviewSection() {
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: "600",
+                fontWeight: "400",
                 color: colors.text,
               }}
             >
@@ -155,6 +155,7 @@ export default function NewsPreviewSection() {
               <Text
                 style={{
                   fontSize: 15,
+                  fontWeight: "400",
                   color: colors.text,
                   flex: 1,
                   lineHeight: 18, // fontSize에 맞춰 자연스럽게

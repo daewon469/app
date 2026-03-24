@@ -1,4 +1,5 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -244,6 +245,15 @@ ${INSTALL_URL}
             Alert.alert("오류", "문자 앱을 열 수 없습니다.");
         } finally {
             setReferralModalVisible(false);
+        }
+    };
+
+    const handleCopyReferralMessage = async () => {
+        try {
+            await Clipboard.setStringAsync(buildReferralMessage());
+            Alert.alert("복사 완료", "추천 문구가 클립보드에 복사되었습니다.");
+        } catch (e) {
+            Alert.alert("오류", "추천 문구 복사에 실패했습니다.");
         }
     };
 
@@ -834,7 +844,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
                                 내 구인글 <Text style={{ color: colors.subText }}>({mockCounts.jobs})</Text>
                             </Text>
                         </View>
@@ -859,7 +869,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
                                 내 수다글 <Text style={{ color: colors.subText }}>({mockCounts.talks})</Text>
                             </Text>
                         </View>
@@ -884,7 +894,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
                                 내 광고글 <Text style={{ color: colors.subText }}>({mockCounts.ads})</Text>
                             </Text>
                         </View>
@@ -909,7 +919,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
                                 내 문의글 <Text style={{ color: colors.subText }}>({mockCounts.inquiries})</Text>
                             </Text>
                         </View>
@@ -1296,6 +1306,22 @@ ${INSTALL_URL}
                                 >
                                     추천하기
                                 </Text>
+                                <Pressable
+                                    onPress={handleCopyReferralMessage}
+                                    hitSlop={8}
+                                    style={{
+                                        paddingHorizontal: 10,
+                                        paddingVertical: 6,
+                                        borderRadius: 8,
+                                        borderWidth: 1,
+                                        borderColor: "#000",
+                                        backgroundColor: "#fff",
+                                    }}
+                                >
+                                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
+                                        복사하기
+                                    </Text>
+                                </Pressable>
                             </View>
                             <Text
                                 style={{

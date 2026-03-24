@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Animated, Text as RNText, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, Pressable, Text as RNText, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ScrollNavigator from "../components/ScrollNavigator";
 import { Referral, type ReferralStatusDetailItem } from "../lib/api";
@@ -68,6 +69,20 @@ export default function TodayReferrDetailScreen() {
   const dateText = String(date ?? "").trim();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ReferralStatusDetailItem[]>([]);
+
+  const handleCopyPhone = useCallback(async (phone: string) => {
+    const text = String(phone ?? "").trim();
+    if (!text) {
+      Alert.alert("안내", "복사할 전화번호가 없습니다.");
+      return;
+    }
+    try {
+      await Clipboard.setStringAsync(text);
+      Alert.alert("복사 완료", `${text}\n클립보드에 복사되었습니다.`);
+    } catch {
+      Alert.alert("오류", "전화번호 복사에 실패했습니다.");
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -226,64 +241,73 @@ export default function TodayReferrDetailScreen() {
                 
               </View>
 
-              {items.map((it, idx) => (
-                <View
-                  key={`${it.A_username ?? "A"}-${it.B_username ?? "B"}-${it.B_phone_number ?? it.A_phone_number ?? ""}-${idx}`}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingVertical: 12,
-                    paddingLeft: 14,
-                    paddingRight: 6,
-                    borderBottomWidth: idx === items.length - 1 ? 0 : 1,
-                    borderBottomColor: colors.divider,
-                  }}
-                >
-                  <Text
+              {items.map((it, idx) => {
+                const phoneText = formatKoreanPhone(it.B_phone_number ?? it.A_phone_number);
+                return (
+                  <View
+                    key={`${it.A_username ?? "A"}-${it.B_username ?? "B"}-${it.B_phone_number ?? it.A_phone_number ?? ""}-${idx}`}
                     style={{
-                      flex: 1.25,
-                      paddingRight: 8,
-                      color: colors.text,
-                      fontSize: 13,
-                      fontWeight: "800",
-                      lineHeight: CELL_LINE_HEIGHT,
-                      minHeight: CELL_MIN_HEIGHT,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 12,
+                      paddingLeft: 14,
+                      paddingRight: 6,
+                      borderBottomWidth: idx === items.length - 1 ? 0 : 1,
+                      borderBottomColor: colors.divider,
                     }}
-                    numberOfLines={CELL_MAX_LINES}
                   >
-                    {it.A_username ?? ""}
-                  </Text>
-                  <Text
-                    style={{
-                      flex: 1.25,
-                      paddingRight: 8,
-                      color: colors.text,
-                      fontSize: 13,
-                      fontWeight: "800",
-                      lineHeight: CELL_LINE_HEIGHT,
-                      minHeight: CELL_MIN_HEIGHT,
-                    }}
-                    numberOfLines={CELL_MAX_LINES}
-                  >
-                    {it.B_username ?? ""}
-                  </Text>
-                  <Text
-                    style={{
-                      width: PHONE_COL_WIDTH,
-                      flexShrink: 0,
-                      color: colors.text,
-                      fontSize: 13,
-                      fontWeight: "800",
-                      textAlign: "right",
-                      lineHeight: CELL_LINE_HEIGHT,
-                      minHeight: CELL_MIN_HEIGHT,
-                    }}
-                    numberOfLines={CELL_MAX_LINES}
-                  >
-                    {formatKoreanPhone(it.B_phone_number ?? it.A_phone_number)}
-                  </Text>
-                </View>
-              ))}
+                    <Text
+                      style={{
+                        flex: 1.25,
+                        paddingRight: 8,
+                        color: colors.text,
+                        fontSize: 13,
+                        fontWeight: "800",
+                        lineHeight: CELL_LINE_HEIGHT,
+                        minHeight: CELL_MIN_HEIGHT,
+                      }}
+                      numberOfLines={CELL_MAX_LINES}
+                    >
+                      {it.A_username ?? ""}
+                    </Text>
+                    <Text
+                      style={{
+                        flex: 1.25,
+                        paddingRight: 8,
+                        color: colors.text,
+                        fontSize: 13,
+                        fontWeight: "800",
+                        lineHeight: CELL_LINE_HEIGHT,
+                        minHeight: CELL_MIN_HEIGHT,
+                      }}
+                      numberOfLines={CELL_MAX_LINES}
+                    >
+                      {it.B_username ?? ""}
+                    </Text>
+                    <Pressable
+                      onPress={() => handleCopyPhone(phoneText)}
+                      style={{
+                        width: PHONE_COL_WIDTH,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.text,
+                          fontSize: 13,
+                          fontWeight: "800",
+                          textAlign: "right",
+                          lineHeight: CELL_LINE_HEIGHT,
+                          minHeight: CELL_MIN_HEIGHT,
+                        }}
+                        numberOfLines={CELL_MAX_LINES}
+                      >
+                        {phoneText}
+                      </Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
             </View>
           )}
         </View>

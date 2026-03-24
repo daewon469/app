@@ -14,7 +14,7 @@ import BusinessPicker from "../components/BusinessMapPicker";
 import ScrollNavigator from "../components/ScrollNavigator";
 import NaverMap from "../components/ui/navermap";
 import WorkPicker from "../components/WorkMapPicker";
-import { API_URL, Posts } from "../lib/api";
+import { API_URL, Posts, type StatusType } from "../lib/api";
 import { RootState } from "../store";
 import { setBusinessLocation, setWorkLocation } from "../store/LocationSlice";
 import { buildKakaoMapUrl } from "../utils/map";
@@ -857,7 +857,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
     if (!res.canceled) setImageUri(res.assets[0].uri);
   };
 
-  const submit = async (cardType: 1 | 2 | 3) => {
+  const submit = async (cardType: 1 | 2 | 3, targetStatus: StatusType = "published") => {
     if (submitting) return;
     setSubmitting(true);
     const [isLoginStr, username] = await Promise.all([
@@ -938,7 +938,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         company_agency: companyAgency || undefined,
 
         agency_call: agencyCall || undefined,
-        status: "published",
+        status: targetStatus,
 
         highlight_color: textColor || undefined,
         highlight_content: onetoking || undefined,
@@ -1019,9 +1019,18 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         await clearDraft();
       }
       // 알림은 "등록/수정 성공" 이후에만 노출
+      const onSuccessConfirm = () => {
+        if (targetStatus === "closed") {
+          router.replace("/mypage");
+          return;
+        }
+        router.back();
+      };
       if (id) {
-        Alert.alert("수정 완료", "수정이 완료되었습니다.", [
-          { text: "확인", onPress: () => router.back() },
+        const titleText = targetStatus === "closed" ? "임시 저장 완료" : "수정 완료";
+        const bodyText = targetStatus === "closed" ? "임시 저장(마감) 처리되었습니다." : "수정이 완료되었습니다.";
+        Alert.alert(titleText, bodyText, [
+          { text: "확인", onPress: onSuccessConfirm },
         ]);
       } else {
         // ✅ 하루 1회 등록 제한(Topbar에서 체크)용 로컬 플래그 저장
@@ -1030,8 +1039,13 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         } catch {
           // ignore
         }
-        Alert.alert("등록 완료", "신규등록이 완료되었습니다.", [
-          { text: "확인", onPress: () => router.back() },
+        const titleText = targetStatus === "closed" ? "임시 저장 완료" : "등록 완료";
+        const bodyText =
+          targetStatus === "closed"
+            ? "임시 저장(마감)으로 등록되었습니다."
+            : "신규등록이 완료되었습니다.";
+        Alert.alert(titleText, bodyText, [
+          { text: "확인", onPress: onSuccessConfirm },
         ]);
       }
     } catch (e: any) {
@@ -1055,7 +1069,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
     }
   };
 
-  const openCardTypeSheet = async () => {
+  const submitWithStatus = async (targetStatus: StatusType) => {
     if (!title.trim()) {
       Alert.alert("확인", "제목을 입력해주세요.");
       return;
@@ -1071,11 +1085,19 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
     }
     // 구인글 등록은 캐시/결제 로직 없이 바로 등록
     if (id) {
-      void submit(selectedCardType);
+      void submit(selectedCardType, targetStatus);
       return;
     }
     setSelectedCardType(1);
-    void submit(1);
+    void submit(1, targetStatus);
+  };
+
+  const openCardTypeSheet = async () => {
+    await submitWithStatus("published");
+  };
+
+  const openTempSaveSheet = async () => {
+    await submitWithStatus("closed");
   };
 
   const onPickWork = ({ address, lat, lng }: LocationSel) => {
@@ -1800,25 +1822,52 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
             />
           </View>
 
-          <TouchableOpacity
-            onPress={openCardTypeSheet}
-            disabled={submitting}
+          <View
             style={{
-              backgroundColor: colors.primary,
-              borderRadius: 16,
-              paddingVertical: 12,
-              paddingHorizontal: 16,
-              alignItems: "center",
-              justifyContent: "center",
+              flexDirection: "row",
+              gap: 10,
               marginTop: 20,
               marginBottom: 50,
-              opacity: submitting ? 0.6 : 1,
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 20 }}>
-              {submitting ? (id ? "수정 중..." : "등록 중...") : (id ? "수  정" : "게\u00A0\u00A0시")}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={openTempSaveSheet}
+              disabled={submitting}
+              style={{
+                flex: 1,
+                backgroundColor: "#6B7280",
+                borderRadius: 16,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
+                {submitting ? "저장 중..." : "임시 저장"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={openCardTypeSheet}
+              disabled={submitting}
+              style={{
+                flex: 1,
+                backgroundColor: colors.primary,
+                borderRadius: 16,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
+                {submitting ? (id ? "수정 중..." : "등록 중...") : (id ? "수  정" : "게\u00A0\u00A0시")}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </Animated.ScrollView>
 
         <ScrollNavigator

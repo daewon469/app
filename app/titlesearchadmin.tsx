@@ -135,6 +135,19 @@ export default function TitleSearchAdmin() {
     setRecommended((prev) => prev.filter((p) => Number(p.id) !== Number(id)));
   }, []);
 
+  const onMove = useCallback((index: number, direction: "up" | "down") => {
+    setRecommended((prev) => {
+      if (index < 0 || index >= prev.length) return prev;
+      const target = direction === "up" ? index - 1 : index + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      const currentItem = next[index];
+      next[index] = next[target];
+      next[target] = currentItem;
+      return next;
+    });
+  }, []);
+
   const onSave = useCallback(async () => {
     if (saving) return;
     setSaving(true);
@@ -281,45 +294,87 @@ export default function TitleSearchAdmin() {
             현재 추천현장: {recommended.length}개
           </Text>
 
-          {(recommended || []).map((p) => (
-            <View
-              key={String(p.id)}
-              style={{
-                borderWidth: 1,
-                borderColor: "#000",
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 10,
-                backgroundColor: "#fff",
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Ionicons name="document-text-outline" size={18} color="#2F6BFF" />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: "900" }} numberOfLines={2}>
-                    {p.title}
-                  </Text>
-                  <Text style={{ marginTop: 4, color: "#666", fontWeight: "700" }}>
-                    ID: {String(p.id)}
-                  </Text>
+          {(recommended || []).map((p, index) => {
+            const isFirst = index === 0;
+            const isLast = index === recommended.length - 1;
+            return (
+              <View
+                key={String(p.id)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#000",
+                  borderRadius: 12,
+                  padding: 12,
+                  marginBottom: 10,
+                  backgroundColor: "#fff",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <Ionicons name="document-text-outline" size={18} color="#2F6BFF" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "900" }} numberOfLines={2}>
+                      {p.title}
+                    </Text>
+                    <Text style={{ marginTop: 4, color: "#666", fontWeight: "700" }}>
+                      ID: {String(p.id)}
+                    </Text>
+                  </View>
+
+                  <View style={{ gap: 4 }}>
+                    <Pressable
+                      onPress={() => onMove(index, "up")}
+                      disabled={saving || isFirst}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: "#000",
+                        backgroundColor: saving || isFirst ? "#eee" : "#EAF0FF",
+                        opacity: isFirst ? 0.7 : 1,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ fontWeight: "900" }}>↑</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => onMove(index, "down")}
+                      disabled={saving || isLast}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: "#000",
+                        backgroundColor: saving || isLast ? "#eee" : "#EAF0FF",
+                        opacity: isLast ? 0.7 : 1,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ fontWeight: "900" }}>↓</Text>
+                    </Pressable>
+                  </View>
+
+                  <Pressable
+                    onPress={() => onRemove(Number(p.id))}
+                    disabled={saving}
+                    style={{
+                      paddingVertical: 10,
+                      paddingHorizontal: 12,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: "#000",
+                      backgroundColor: saving ? "#eee" : "#ffe5e5",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "900" }}>삭제</Text>
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => onRemove(Number(p.id))}
-                  disabled={saving}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: "#000",
-                    backgroundColor: saving ? "#eee" : "#ffe5e5",
-                  }}
-                >
-                  <Text style={{ fontWeight: "900" }}>삭제</Text>
-                </Pressable>
               </View>
-            </View>
-          ))}
+            );
+          })}
 
           <Pressable
             onPress={onSave}

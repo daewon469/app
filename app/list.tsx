@@ -3,8 +3,9 @@ import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
 import type { RootState } from "@/store";
 import { setRegions, type Province } from "@/store/regionSlice";
 import { Ionicons } from "@expo/vector-icons";
-import { Image as ExpoImage } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Clipboard from "expo-clipboard";
+import { Image as ExpoImage } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,7 +21,7 @@ import NewsPreviewSection from "../components/ui/newspreview";
 import PostCard from "../components/ui/postcard";
 import PostCard2 from "../components/ui/postcard2";
 import PostCard3 from "../components/ui/postcard3";
-import { Auth, Points, Posts, UIConfig, resolveMediaUrl, type Post, type UIConfigBannerItem } from "../lib/api";
+import { Auth, Points, Posts, resolveMediaUrl, UIConfig, type Post, type UIConfigBannerItem } from "../lib/api";
 import { isReferralModalAction, isReferralModalLinkUrl, normalizeBannerClickAction } from "../lib/ui_banner_actions";
 import { getSession } from "../utils/session";
 
@@ -28,7 +29,10 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
-const PAGE_SIZE = 50;
+// customlike(/community/posts/custom)는 서버에서 조건 적용 후 반환하므로 누락이 적습니다.
+// list는 클라이언트 후처리 필터를 사용하므로, 희소한 조건(예: 서울+아파트+본부장) 누락을 줄이기 위해
+// 서버 허용 최대치(100)로 1회 로드량을 상향합니다.
+const PAGE_SIZE = 1000;
 const MAP_PAGE_SIZE = 500;
 const MAP_CHUNK_SIZE = 100;
 // 출석체크(출첵) 버튼/팝업 강제 노출 스위치
@@ -40,14 +44,21 @@ const FORCE_ATTENDANCE_CTA = false;
 // - 배포 전에는 false로 되돌리세요.
 const FORCE_UI_POPUP = false;
 
-const normalizeProvinceShort = (name?: string) => {
+const toProvinceShort = (name?: string) => {
   const raw = String(name ?? "").trim();
   if (!raw) return "";
-  if (raw === "전체") return "전체";
-  let short = raw.replace(/특별시|광역시|특별자치시|특별자치도|도/g, "");
+  if (raw === "전체" || raw === "전국") return "전체";
+
+  // API/DB에 "서울시", "서울특별시", "서울" 등 포맷이 혼재될 수 있어 공통 축약으로 정규화
+  let short = raw.replace(/\s+/g, "");
+  short = short
+    .replace(/특별시|광역시|특별자치시|특별자치도|자치시|자치도|도/g, "")
+    .replace(/시$/, "");
   short = short.replace(/^충청/, "충").replace(/^경상/, "경").replace(/^전라/, "전");
   return short.trim();
 };
+
+const normalizeProvinceShort = (name?: string) => toProvinceShort(name);
 
 // 파란띠 표시용: 한 글자씩 띄워쓰기 (예: "경기" -> "경 기")
 // - 기존 공백은 유지하되, 과도한 연속 공백은 1개로 정리합니다.
@@ -185,14 +196,9 @@ function TableGrid<T extends string>({
 // 서버/DB는 province를 "경기/서울/충북" 같은 축약형으로 저장/필터링하는 경우가 있어
 // 지역검색 쿼리 전송 시 축약형으로 normalize 합니다.
 const normalizeProvinceForServer = (province?: string) => {
-  const p = (province || "").trim();
-  if (!p || p === "전체") return undefined;
-  let short = p.replace(/특별시|광역시|특별자치시|특별자치도|도/g, "");
-  short = short
-    .replace(/^충청/, "충")
-    .replace(/^경상/, "경")
-    .replace(/^전라/, "전");
-  return short.trim() || undefined;
+  const short = toProvinceShort(province);
+  if (!short || short === "전체") return undefined;
+  return short;
 };
 
 const regionToCode = (r: { province: string; city: string }) => {
@@ -743,6 +749,16 @@ ${INSTALL_URL}
     }
   }, [Alert, Linking, Platform, buildReferralMessage, referralCode]);
 
+  const handleCopyReferralMessage = useCallback(async () => {
+    const message = buildReferralMessage(referralCode);
+    try {
+      await Clipboard.setStringAsync(message);
+      Alert.alert("복사 완료", "추천 문구가 클립보드에 복사되었습니다.");
+    } catch (e) {
+      Alert.alert("오류", "추천 문구 복사에 실패했습니다.");
+    }
+  }, [Alert, buildReferralMessage, referralCode]);
+
   const handleOpenKakaoOpenChat = useCallback(async () => {
     const url = "https://open.kakao.com/o/gWwAD7bi";
     try {
@@ -1217,20 +1233,40 @@ ${INSTALL_URL}
 
     if (!hasProvFilter && !hasIndFilter && !hasRoleFilter) return orderedItemsRaw;
 
+    const parseRoleFlag = (v: any) => {
+      if (typeof v === "boolean") return v;
+      if (typeof v === "number") return v === 1;
+      const s = String(v ?? "").trim().toLowerCase();
+      if (!s) return false;
+      return s === "1" || s === "true" || s === "y" || s === "yes" || s === "on";
+    };
+
+    const hasRoleData = (useValue: any, feeValue: any) => {
+      // write.tsx 저장 기준:
+      // - *_use=true 이면 해당 모집이 선택된 것
+      // - 레거시 데이터 호환: *_fee 값만 남아도 선택으로 간주
+      return parseRoleFlag(useValue) || Boolean(String(feeValue ?? "").trim());
+    };
+
     const matchRole = (p: Post) => {
       if (!hasRoleFilter) return true;
       const wants = new Set(roles);
-      const hasTotal = Boolean((p as any).total_use);
-      // "본부장" 필터는 본부장(branch_use) + 본부(hq_use) 모두 포함
-      const hasBranchOrHq = Boolean((p as any).branch_use) || Boolean((p as any).hq_use);
+      const hasTotal = hasRoleData((p as any).total_use, (p as any).total_fee);
+      // "본부장" 필터는 write.tsx 저장 기준에 맞춰 branch_*만 본부장으로 인정
+      // (hq_*는 "본부" 전용이므로 본부장 필터에서 제외)
+      const hasBranchOnly = parseRoleFlag((p as any).branch_use);
       // 서버(/community/posts/custom)와 동일 기준으로 확장 매칭
       // - 팀장: 팀장(leader_use) + 팀(team_use)
       // - 팀원: 팀원(member_use) + 각개(each_use)
-      const hasLeaderOrTeam = Boolean((p as any).leader_use) || Boolean((p as any).team_use);
-      const hasMemberOrEach = Boolean((p as any).member_use) || Boolean((p as any).each_use);
+      const hasLeaderOrTeam =
+        hasRoleData((p as any).leader_use, (p as any).leader_fee) ||
+        hasRoleData((p as any).team_use, (p as any).team_fee);
+      const hasMemberOrEach =
+        hasRoleData((p as any).member_use, (p as any).member_fee) ||
+        hasRoleData((p as any).each_use, (p as any).each_fee);
       const ok =
         (wants.has("총괄") && hasTotal) ||
-        (wants.has("본부장") && hasBranchOrHq) ||
+        (wants.has("본부장") && hasBranchOnly) ||
         (wants.has("팀장") && hasLeaderOrTeam) ||
         (wants.has("팀원") && hasMemberOrEach) ||
         (wants.has("기타") && Boolean(String((p as any).other_role_name ?? "").trim()));
@@ -1244,9 +1280,16 @@ ${INSTALL_URL}
         if (!provs.includes(sp)) return false;
       }
       if (hasIndFilter) {
-        const ind = String((p as any).job_industry ?? "").trim();
-        if (!ind) return false;
-        if (!inds.includes(ind)) return false;
+        const indRaw = String((p as any).job_industry ?? "").trim();
+        if (!indRaw) return false;
+        // write.tsx는 업종을 "아파트,상가" 형태로 저장할 수 있어 CSV 분해 후 비교
+        const indList = indRaw
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (indList.length === 0) return false;
+        const hasAnyIndustry = indList.some((ind) => inds.includes(ind));
+        if (!hasAnyIndustry) return false;
       }
       if (!matchRole(p)) return false;
       return true;
@@ -1657,115 +1700,11 @@ ${INSTALL_URL}
                 );
               };
 
-              const fallback1Base = (
-                <Pressable
-                  onPress={handleOpenKakaoOpenChat}
-                  style={{
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 70,
-                    backgroundColor: "#FFF6D2",
-                    borderWidth: 1,
-                    borderColor: "black",
-                    zIndex: 20,
-                    justifyContent: "center",
-                    elevation: 4,
-                    shadowColor: "#000",
-                    borderRadius: 0,
-                    shadowOpacity: 0.2,
-                    marginBottom: 5,
-                    shadowRadius: 4,
-                  }}
-                >
-                  <Text
-                    allowFontScaling={false}
-                    style={{
-                      color: "black",
-                      fontSize: 25,
-                      textAlign: "center",
-                      fontFamily: "PlusFont1",
-                      marginTop: 0,
-                      lineHeight: 28,
-                    }}
-                  >
-                    <Text allowFontScaling={false} style={{ color: "black", fontFamily: DEFAULT_SYMBOL_FONT_FAMILY }}>※ </Text>
-                    <Text allowFontScaling={false} style={{ color: "black" }}>분양상담사</Text>
-                    <Text allowFontScaling={false} style={{ color: "red" }}> 단톡방</Text>
-                    <Text allowFontScaling={false} style={{ color: "#888888", fontSize: 18 }}> (클릭)</Text>
-                  </Text>
+            
+              const fallback1 = useAdminTopBannersOnly ?? null;
 
-                  <Text
-                    allowFontScaling={false}
-                    style={{
-                      color: "blue",
-                      fontSize: 17,
-                      textAlign: "center",
-                      fontFamily: "PlusFont1",
-                      marginTop: 0,
-                      lineHeight: 28,
-                    }}
-                  >
-                    분양현장 구인구직 광고방 입니다
-                  </Text>
-                </Pressable>
-              );
-              const fallback1 = useAdminTopBannersOnly ? null : fallback1Base;
-
-              const fallback2Base = (
-                <Pressable
-                  onPress={openReferralModalFromBanner}
-                  style={{
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 70,
-                    backgroundColor: "#FFF6D2",
-                    borderWidth: 1,
-                    borderColor: "black",
-                    zIndex: 20,
-                    justifyContent: "center",
-                    elevation: 4,
-                    shadowColor: "#000",
-                    borderRadius: 0,
-                    shadowOpacity: 0.2,
-                    marginBottom: 5,
-                    shadowRadius: 4,
-                  }}
-                >
-                  <Text
-                    allowFontScaling={false}
-                    style={{
-                      color: "black",
-                      fontSize: 25,
-                      textAlign: "center",
-                      fontFamily: "PlusFont1",
-                      marginTop: 0,
-                      lineHeight: 28,
-                    }}
-                  >
-                    <Text allowFontScaling={false} style={{ fontFamily: DEFAULT_SYMBOL_FONT_FAMILY }}>※ </Text>
-                    <Text allowFontScaling={false}>공유하기 추천 </Text>
-                    <Text allowFontScaling={false} style={{ color: "red" }}>이벤트 </Text>
-                    <Text allowFontScaling={false} style={{ color: "#888888", fontSize: 18 }}>(클릭)</Text>
-                  </Text>
-
-                  <Text
-                    allowFontScaling={false}
-                    style={{
-                      color: "blue",
-                      fontSize: 15,
-                      textAlign: "center",
-                      fontFamily: "PlusFont1",
-                      marginTop: 0,
-                      lineHeight: 28,
-                    }}
-                  >
-                    추천한 회원 1000점 / 추천받은 회원 1000점
-                  </Text>
-                </Pressable>
-              );
-              const fallback2 = useAdminTopBannersOnly ? null : fallback2Base;
+              
+              const fallback2 = useAdminTopBannersOnly ?? null;
 
               return (
                 <View>
@@ -1794,10 +1733,10 @@ ${INSTALL_URL}
                 <View
                   style={{
                     flexDirection: "row",
-                    alignItems: "center", // 중앙 정렬
+                    alignItems: "center", 
                     justifyContent: "space-between",
                     paddingHorizontal: 4,
-                    minHeight: 35, // 버튼 높이(32)와 통일
+                    minHeight: 35, 
                   }}
                 >
                   <Text
@@ -2494,6 +2433,22 @@ ${INSTALL_URL}
               >
                 추천하기
               </Text>
+              <Pressable
+                onPress={handleCopyReferralMessage}
+                hitSlop={8}
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: "#000",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
+                  복사하기
+                </Text>
+              </Pressable>
             </View>
             <Text
               style={{

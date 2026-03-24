@@ -103,6 +103,7 @@ export default function CommunityList() {
         <Text
           style={{
             fontSize: 15,
+            fontWeight: "400",
             color: colors.text,
             flex: 1,
           }}
