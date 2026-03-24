@@ -3,11 +3,13 @@ import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
 import type { RootState } from "@/store";
 import { setRegions, type Province } from "@/store/regionSlice";
 import { Ionicons } from "@expo/vector-icons";
+import { Image as ExpoImage } from "expo-image";
 import { useFocusEffect } from "@react-navigation/native";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Animated, BackHandler, Easing, FlatList, Image, Linking, Modal, Platform, Pressable, RefreshControl, Text as RNText, Share, ToastAndroid, TouchableOpacity, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import CustomFilterModal, { type CustomFilterValue } from "../components/customfilter";
 import CustomRegionMultiSelectModal, { type RegionObj } from "../components/CustomRegionMultiSelectModal";
@@ -18,7 +20,7 @@ import NewsPreviewSection from "../components/ui/newspreview";
 import PostCard from "../components/ui/postcard";
 import PostCard2 from "../components/ui/postcard2";
 import PostCard3 from "../components/ui/postcard3";
-import { Auth, Points, Posts, UIConfig, type Post, type UIConfigBannerItem } from "../lib/api";
+import { Auth, Points, Posts, UIConfig, resolveMediaUrl, type Post, type UIConfigBannerItem } from "../lib/api";
 import { isReferralModalAction, isReferralModalLinkUrl, normalizeBannerClickAction } from "../lib/ui_banner_actions";
 import { getSession } from "../utils/session";
 
@@ -26,7 +28,7 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 50;
 const MAP_PAGE_SIZE = 500;
 const MAP_CHUNK_SIZE = 100;
 // 출석체크(출첵) 버튼/팝업 강제 노출 스위치
@@ -285,6 +287,8 @@ export default function Postlist() {
   const { width: windowWidth } = useWindowDimensions();
   const dispatch = useDispatch();
   const { openMap, openRegion } = useLocalSearchParams<{ openMap?: string; openRegion?: string }>();
+  const insets = useSafeAreaInsets();
+  const IS_IOS = Platform.OS === "ios";
   const didInitMapFromParamRef = useRef(false);
   const prevUiPopupEnabledRef = useRef<boolean | null>(null);
   const prevUiPopupImageUrlRef = useRef<string | null>(null);
@@ -408,6 +412,17 @@ export default function Postlist() {
     [dispatch, resetCustomFilter]
   );
   const BOTTOM_BAR_HEIGHT = 61;
+  const FLOATING_EXTRA_GAP = 16; // 12~20 권장
+  const floatingBottom = useMemo(() => {
+    if (!IS_IOS) return 0;
+    // iOS: bottom = tabBarHeight + safeAreaBottom + extraGap
+    return BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + FLOATING_EXTRA_GAP;
+  }, [BOTTOM_BAR_HEIGHT, FLOATING_EXTRA_GAP, IS_IOS, insets?.bottom]);
+  const scrollNavBottomOffset = useMemo(() => {
+    // 스크롤 트랙도 iOS에서는 홈 인디케이터/탭바를 침범하지 않도록 safe area를 포함
+    return BOTTOM_BAR_HEIGHT + (IS_IOS ? (insets?.bottom ?? 0) : 0) + 2;
+  }, [BOTTOM_BAR_HEIGHT, IS_IOS, insets?.bottom]);
+  const isScrollable = useMemo(() => contentHeight > layoutHeight + 20, [contentHeight, layoutHeight]);
   const [mapSearchOpen, setMapSearchOpen] = useState(false);
   const [mapSelectedPostId, setMapSelectedPostId] = useState<string | null>(null);
   // 지도검색 진입 시 디폴트는 "모델하우스 기준"
@@ -1540,6 +1555,11 @@ ${INSTALL_URL}
           loadMore();
         }}
         onEndReachedThreshold={0.6}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === "android"}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
@@ -1627,10 +1647,11 @@ ${INSTALL_URL}
                       overflow: "hidden",
                     }}
                   >
-                    <Image
-                      source={{ uri: String(it.image_url) }}
+                    <ExpoImage
+                      source={{ uri: String(resolveMediaUrl(it.image_url) ?? it.image_url) }}
                       style={{ width: "100%", height: "100%", backgroundColor: "#f2f2f2" }}
-                      resizeMode={itemResizeMode}
+                      cachePolicy="memory-disk"
+                      contentFit={itemResizeMode === "stretch" ? "fill" : itemResizeMode}
                     />
                   </Pressable>
                 );
@@ -1895,10 +1916,11 @@ ${INSTALL_URL}
                     alignSelf: "center",
                   }}
                 >
-                  <Image
-                    source={{ uri: String(item?.image_url) }}
+                  <ExpoImage
+                    source={{ uri: String(resolveMediaUrl(item?.image_url) ?? item?.image_url) }}
                     style={{ width: "100%", height: bannerHeight, backgroundColor: "#f2f2f2" }}
-                    resizeMode={bannerResizeMode}
+                    cachePolicy="memory-disk"
+                    contentFit={bannerResizeMode === "stretch" ? "fill" : bannerResizeMode}
                   />
                 </Pressable>
               );
@@ -1985,13 +2007,263 @@ ${INSTALL_URL}
             animated: true,
           })
         }
-        bottomOffset={BOTTOM_BAR_HEIGHT + 2}
+        bottomOffset={scrollNavBottomOffset}
         topOffset={0}
         trackOpacity={0.6}
         thumbOpacity={1.0}
         thumbColor={"#FF0000"}
         barWidth={4}
+        showButtons={!IS_IOS}
       />
+
+      {/* iOS 우측 플로팅 버튼군(맞춤보기/출첵/스크롤 위/아래) 공통 스택:
+          - bottom = tabBarHeight + safeAreaBottom + extraGap
+          - 개별 버튼 bottom 하드코딩 금지 */}
+      {IS_IOS && !mapSearchOpen ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            right: 23,
+            bottom: floatingBottom,
+            zIndex: 95,
+            alignItems: "center",
+          }}
+        >
+          {/* 맞춤 보기 */}
+          <View style={{ marginBottom: 12 }} pointerEvents="box-none">
+            <Pressable
+              onPress={() => setCustomFilterVisible(true)}
+              hitSlop={8}
+              style={({ pressed }) => ({
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#2F6BFF",
+                borderWidth: 1,
+                borderColor: "rgba(0,0,0,0.25)",
+                opacity: pressed ? 0.9 : 1,
+                shadowColor: "#000",
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 6,
+              })}
+              accessibilityRole="button"
+              accessibilityLabel="맞춤 보기"
+            >
+              <View style={{ alignItems: "center" }}>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontWeight: "900",
+                    fontFamily: "PlusFont1",
+                    color: "#fff",
+                    fontSize: 13,
+                    lineHeight: 14,
+                    includeFontPadding: false,
+                    textShadowColor: "rgba(0,0,0,0.35)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 1,
+                  }}
+                >
+                  맞춤
+                </Text>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontWeight: "900",
+                    fontFamily: "PlusFont1",
+                    color: "#fff",
+                    fontSize: 13,
+                    lineHeight: 14,
+                    includeFontPadding: false,
+                    marginTop: 0,
+                    textShadowColor: "rgba(0,0,0,0.35)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 1,
+                  }}
+                >
+                  보기
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+
+          {/* 출석체크(출첵) */}
+          {attendanceCtaVisible ? (
+            <View style={{ marginBottom: 12 }} pointerEvents="box-none">
+              {/* 이펙트(링 + +포인트) */}
+              {attendanceEffectVisible ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: -11,
+                    top: -11,
+                    width: 70,
+                    height: 70,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Animated.View
+                    style={{
+                      position: "absolute",
+                      width: 58,
+                      height: 58,
+                      borderRadius: 29,
+                      borderWidth: 3,
+                      borderColor: "#FFD400",
+                      opacity: attendanceRingOpacity,
+                      transform: [{ scale: attendanceRingScale }],
+                    }}
+                  />
+                  <Animated.View
+                    style={{
+                      transform: [{ translateY: attendancePopY }],
+                      opacity: attendancePopOpacity,
+                    }}
+                  >
+                    {attendancePopTextVisible ? (
+                      <Text
+                        style={{
+                          fontWeight: "900",
+                          color: "#FFD400",
+                          textShadowColor: "rgba(0,0,0,0.4)",
+                          textShadowOffset: { width: 0, height: 1 },
+                          textShadowRadius: 2,
+                        }}
+                      >
+                        +{attendanceAmount}P
+                      </Text>
+                    ) : null}
+                  </Animated.View>
+                </View>
+              ) : null}
+
+              <Animated.View style={{ transform: [{ scale: attendanceBtnScale }] }}>
+                <Pressable
+                  onPress={onPressAttendanceCta}
+                  disabled={!attendanceSupported || attendanceLoading}
+                  style={({ pressed }) => ({
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#E53935", // 빨간 배경
+                    borderWidth: 1,
+                    borderColor: "rgba(0,0,0,0.25)",
+                    opacity: pressed ? 0.9 : 1,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 6,
+                  })}
+                >
+                  <View style={{ alignItems: "center" }}>
+                    <OutlinedText
+                      text={"출첵"}
+                      outlineColor={"#000"}
+                      outlineWidth={1}
+                      containerStyle={{ marginLeft: -1 }}
+                      textStyle={{
+                        textAlign: "center",
+                        fontWeight: "900",
+                        fontFamily: "PlusFont1",
+                        color: "#FFD400", // 노란 텍스트
+                        fontSize: 14,
+                        lineHeight: 15,
+                        includeFontPadding: false,
+                      }}
+                    />
+                    <OutlinedText
+                      text={
+                        attendanceLoading
+                          ? "..."
+                          : `${attendanceAmount.toLocaleString("ko-KR")}`
+                      }
+                      outlineColor={"#000"}
+                      outlineWidth={1}
+                      containerStyle={{ marginTop: 1 }}
+                      textStyle={{
+                        textAlign: "center",
+                        fontWeight: "900",
+                        fontFamily: "PlusFont1",
+                        color: "#FFD400",
+                        fontSize: 12,
+                        lineHeight: 13,
+                        includeFontPadding: false,
+                      }}
+                    />
+                  </View>
+                </Pressable>
+              </Animated.View>
+            </View>
+          ) : null}
+
+          {/* 스크롤 위/아래 */}
+          {isScrollable ? (
+            <View pointerEvents="box-none" style={{ alignItems: "center" }}>
+              <Pressable
+                onPress={() =>
+                  listRef.current?.scrollToOffset({
+                    offset: 0,
+                    animated: true,
+                  })
+                }
+                style={({ pressed }) => ({
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  borderWidth: 1,
+                  borderColor: "rgba(0,0,0,0.6)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.85 : 1,
+                })}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="맨 위로"
+              >
+                <Ionicons name="chevron-up" size={20} color="#111" />
+              </Pressable>
+
+              <View style={{ height: 10 }} />
+
+              <Pressable
+                onPress={() =>
+                  listRef.current?.scrollToOffset({
+                    offset: Math.max(Math.ceil(contentHeight - layoutHeight), 0),
+                    animated: true,
+                  })
+                }
+                style={({ pressed }) => ({
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "rgba(255,255,255,0.9)",
+                  borderWidth: 1,
+                  borderColor: "rgba(0,0,0,0.6)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: pressed ? 0.85 : 1,
+                })}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="맨 아래로"
+              >
+                <Ionicons name="chevron-down" size={20} color="#111" />
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
 
 
@@ -2114,7 +2386,7 @@ ${INSTALL_URL}
                 }}
               >
                 <Image
-                  source={{ uri: uiConfig.popup.image_url }}
+                  source={{ uri: String(resolveMediaUrl(uiConfig.popup.image_url) ?? uiConfig.popup.image_url) }}
                   style={{
                     width: "100%",
                     height: Math.max(200, Math.min(900, Number((uiConfig?.popup as any)?.height ?? 360) || 360)),
@@ -2283,198 +2555,203 @@ ${INSTALL_URL}
         </Pressable>
       </Modal>
 
-      {/* 출석체크(출첵) 플로팅 버튼: 오늘 미출석일 때만 노출 */}
-      {attendanceCtaVisible && !mapSearchOpen ? (
-        <View
-          pointerEvents="box-none"
-          style={{
-            position: "absolute",
-            right: 23,
-            bottom: BOTTOM_BAR_HEIGHT + 14 + 50 + 30 + 3,
-            zIndex: 80,
-          }}
-        >
-          {/* 이펙트(링 + +포인트) */}
-          {attendanceEffectVisible ? (
+      {/* Android: 기존 absolute 플로팅 버튼 배치 유지 (iOS는 공통 스택으로 통합) */}
+      {!IS_IOS ? (
+        <>
+          {/* 출석체크(출첵) 플로팅 버튼: 오늘 미출석일 때만 노출 */}
+          {attendanceCtaVisible && !mapSearchOpen ? (
             <View
-              pointerEvents="none"
+              pointerEvents="box-none"
               style={{
                 position: "absolute",
-                left: -11,
-                top: -11,
-                width: 70,
-                height: 70,
-                alignItems: "center",
-                justifyContent: "center",
+                right: 23,
+                bottom: BOTTOM_BAR_HEIGHT + 14 + 50 + 30 + 3,
+                zIndex: 80,
               }}
             >
-              <Animated.View
-                style={{
-                  position: "absolute",
-                  width: 58,
-                  height: 58,
-                  borderRadius: 29,
-                  borderWidth: 3,
-                  borderColor: "#FFD400",
-                  opacity: attendanceRingOpacity,
-                  transform: [{ scale: attendanceRingScale }],
-                }}
-              />
-              <Animated.View
-                style={{
-                  transform: [{ translateY: attendancePopY }],
-                  opacity: attendancePopOpacity,
-                }}
-              >
-                {attendancePopTextVisible ? (
-                  <Text
+              {/* 이펙트(링 + +포인트) */}
+              {attendanceEffectVisible ? (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: -11,
+                    top: -11,
+                    width: 70,
+                    height: 70,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Animated.View
                     style={{
-                      fontWeight: "900",
-                      color: "#FFD400",
-                      textShadowColor: "rgba(0,0,0,0.4)",
-                      textShadowOffset: { width: 0, height: 1 },
-                      textShadowRadius: 2,
+                      position: "absolute",
+                      width: 58,
+                      height: 58,
+                      borderRadius: 29,
+                      borderWidth: 3,
+                      borderColor: "#FFD400",
+                      opacity: attendanceRingOpacity,
+                      transform: [{ scale: attendanceRingScale }],
+                    }}
+                  />
+                  <Animated.View
+                    style={{
+                      transform: [{ translateY: attendancePopY }],
+                      opacity: attendancePopOpacity,
                     }}
                   >
-                    +{attendanceAmount}P
-                  </Text>
-                ) : null}
+                    {attendancePopTextVisible ? (
+                      <Text
+                        style={{
+                          fontWeight: "900",
+                          color: "#FFD400",
+                          textShadowColor: "rgba(0,0,0,0.4)",
+                          textShadowOffset: { width: 0, height: 1 },
+                          textShadowRadius: 2,
+                        }}
+                      >
+                        +{attendanceAmount}P
+                      </Text>
+                    ) : null}
+                  </Animated.View>
+                </View>
+              ) : null}
+
+              <Animated.View style={{ transform: [{ scale: attendanceBtnScale }] }}>
+                <Pressable
+                  onPress={onPressAttendanceCta}
+                  disabled={!attendanceSupported || attendanceLoading}
+                  style={({ pressed }) => ({
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#E53935", // 빨간 배경
+                    borderWidth: 1,
+                    borderColor: "rgba(0,0,0,0.25)",
+                    opacity: pressed ? 0.9 : 1,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 6,
+                  })}
+                >
+                  <View style={{ alignItems: "center" }}>
+                    <OutlinedText
+                      text={"출첵"}
+                      outlineColor={"#000"}
+                      outlineWidth={1}
+                      containerStyle={{ marginLeft: -1 }}
+                      textStyle={{
+                        textAlign: "center",
+                        fontWeight: "900",
+                        fontFamily: "PlusFont1",
+                        color: "#FFD400", // 노란 텍스트
+                        fontSize: 14,
+                        lineHeight: 15,
+                        includeFontPadding: false,
+                      }}
+                    />
+                    <OutlinedText
+                      text={
+                        attendanceLoading
+                          ? "..."
+                          : `${attendanceAmount.toLocaleString("ko-KR")}`
+                      }
+                      outlineColor={"#000"}
+                      outlineWidth={1}
+                      containerStyle={{ marginTop: 1 }}
+                      textStyle={{
+                        textAlign: "center",
+                        fontWeight: "900",
+                        fontFamily: "PlusFont1",
+                        color: "#FFD400",
+                        fontSize: 12,
+                        lineHeight: 13,
+                        includeFontPadding: false,
+                      }}
+                    />
+                  </View>
+                </Pressable>
               </Animated.View>
             </View>
           ) : null}
 
-          <Animated.View style={{ transform: [{ scale: attendanceBtnScale }] }}>
-            <Pressable
-              onPress={onPressAttendanceCta}
-              disabled={!attendanceSupported || attendanceLoading}
-              style={({ pressed }) => ({
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#E53935", // 빨간 배경
-                borderWidth: 1,
-                borderColor: "rgba(0,0,0,0.25)",
-                opacity: pressed ? 0.9 : 1,
-                shadowColor: "#000",
-                shadowOpacity: 0.25,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 6,
-              })}
+          {/* 맞춤 보기(임시 필터) 플로팅 버튼: 출첵 버튼 위 고정 */}
+          {!mapSearchOpen ? (
+            <View
+              pointerEvents="box-none"
+              style={{
+                position: "absolute",
+                right: 23,
+                bottom: BOTTOM_BAR_HEIGHT + 10 + 50 + 30 + 66,
+                zIndex: 81,
+              }}
             >
-              <View style={{ alignItems: "center" }}>
-                <OutlinedText
-                  text={"출첵"}
-                  outlineColor={"#000"}
-                  outlineWidth={1}
-                  containerStyle={{ marginLeft: -1 }}
-                  textStyle={{
-                    textAlign: "center",
-                    fontWeight: "900",
-                    fontFamily: "PlusFont1",
-                    color: "#FFD400", // 노란 텍스트
-                    fontSize: 14,
-                    lineHeight: 15,
-                    includeFontPadding: false,
-                  }}
-                />
-                <OutlinedText
-                  text={
-                    attendanceLoading
-                      ? "..."
-                      : `${attendanceAmount.toLocaleString("ko-KR")}`
-                  }
-                  outlineColor={"#000"}
-                  outlineWidth={1}
-                  containerStyle={{ marginTop: 1 }}
-                  textStyle={{
-                    textAlign: "center",
-                    fontWeight: "900",
-                    fontFamily: "PlusFont1",
-                    color: "#FFD400",
-                    fontSize: 12,
-                    lineHeight: 13,
-                    includeFontPadding: false,
-                  }}
-                />
-              </View>
-            </Pressable>
-          </Animated.View>
-        </View>
-      ) : null}
-
-      {/* 맞춤 보기(임시 필터) 플로팅 버튼: 출첵 버튼 위 고정 */}
-      {!mapSearchOpen ? (
-        <View
-          pointerEvents="box-none"
-          style={{
-            position: "absolute",
-            right: 23,
-            bottom: BOTTOM_BAR_HEIGHT + 10 + 50 + 30 + 66,
-            zIndex: 81,
-          }}
-        >
-          <Pressable
-            onPress={() => setCustomFilterVisible(true)}
-            hitSlop={8}
-            style={({ pressed }) => ({
-              width: 46,
-              height: 46,
-              borderRadius: 23,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#2F6BFF",
-              borderWidth: 1,
-              borderColor: "rgba(0,0,0,0.25)",
-              opacity: pressed ? 0.9 : 1,
-              shadowColor: "#000",
-              shadowOpacity: 0.25,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
-            })}
-            accessibilityRole="button"
-            accessibilityLabel="맞춤 보기"
-          >
-            <View style={{ alignItems: "center" }}>
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontWeight: "900",
-                  fontFamily: "PlusFont1",
-                  color: "#fff",
-                  fontSize: 13,
-                  lineHeight: 14,
-                  includeFontPadding: false,
-                  textShadowColor: "rgba(0,0,0,0.35)",
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 1,
-                }}
+              <Pressable
+                onPress={() => setCustomFilterVisible(true)}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  width: 46,
+                  height: 46,
+                  borderRadius: 23,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#2F6BFF",
+                  borderWidth: 1,
+                  borderColor: "rgba(0,0,0,0.25)",
+                  opacity: pressed ? 0.9 : 1,
+                  shadowColor: "#000",
+                  shadowOpacity: 0.25,
+                  shadowRadius: 6,
+                  shadowOffset: { width: 0, height: 4 },
+                  elevation: 6,
+                })}
+                accessibilityRole="button"
+                accessibilityLabel="맞춤 보기"
               >
-                맞춤
-              </Text>
-              <Text
-                style={{
-                  textAlign: "center",
-                  fontWeight: "900",
-                  fontFamily: "PlusFont1",
-                  color: "#fff",
-                  fontSize: 13,
-                  lineHeight: 14,
-                  includeFontPadding: false,
-                  marginTop: 0,
-                  textShadowColor: "rgba(0,0,0,0.35)",
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 1,
-                }}
-              >
-                보기
-              </Text>
+                <View style={{ alignItems: "center" }}>
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      fontWeight: "900",
+                      fontFamily: "PlusFont1",
+                      color: "#fff",
+                      fontSize: 13,
+                      lineHeight: 14,
+                      includeFontPadding: false,
+                      textShadowColor: "rgba(0,0,0,0.35)",
+                      textShadowOffset: { width: 0, height: 1 },
+                      textShadowRadius: 1,
+                    }}
+                  >
+                    맞춤
+                  </Text>
+                  <Text
+                    style={{
+                      textAlign: "center",
+                      fontWeight: "900",
+                      fontFamily: "PlusFont1",
+                      color: "#fff",
+                      fontSize: 13,
+                      lineHeight: 14,
+                      includeFontPadding: false,
+                      marginTop: 0,
+                      textShadowColor: "rgba(0,0,0,0.35)",
+                      textShadowOffset: { width: 0, height: 1 },
+                      textShadowRadius: 1,
+                    }}
+                  >
+                    보기
+                  </Text>
+                </View>
+              </Pressable>
             </View>
-          </Pressable>
-        </View>
+          ) : null}
+        </>
       ) : null}
 
       <CustomFilterModal

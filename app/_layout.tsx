@@ -6,12 +6,11 @@ import { router, Stack } from 'expo-router';
 import * as SecureStore from "expo-secure-store";
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from "react";
-import { Alert, Platform, Text, TextInput } from "react-native";
+import { Alert, Platform, Text, TextInput, View } from "react-native";
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MD3LightTheme, PaperProvider } from "react-native-paper";
 import 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Provider } from 'react-redux';
 import ForceUpdateModal from "../components/ui/ForceUpdateModal";
 import TopBar from "../components/ui/Topbar";
@@ -227,7 +226,7 @@ export default function RootLayout() {
       <PaperProvider theme={paperTheme}>
         <ThemeProvider value={DefaultTheme}>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", paddingTop: 0 }} edges={['top']}>
+            <View style={{ flex: 1, backgroundColor: "#fff" }}>
               <ForceUpdateModal
                 visible={forceUpdateVisible}
                 currentVersion={forceUpdateInfo.currentVersion}
@@ -254,8 +253,8 @@ export default function RootLayout() {
 
               </Stack>
 
-              <StatusBar style="dark" />
-            </SafeAreaView>
+              <StatusBar style="light" backgroundColor="#0B1B3A" />
+            </View>
           </GestureHandlerRootView>
         </ThemeProvider></PaperProvider></Provider>
   );

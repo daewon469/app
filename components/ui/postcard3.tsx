@@ -1,11 +1,12 @@
 import { Link } from "expo-router";
 import { Image, Pressable, Text, View, type ImageSourcePropType } from "react-native";
-import type { Post } from "../../lib/api";
+import { resolveMediaUrl, type Post } from "../../lib/api";
 import Heart from "./heart2";
 
 export default function PostcardTitleOnly({ post }: { post: Post }) {
-    const thumbSource: ImageSourcePropType = post.image_url
-        ? { uri: post.image_url }
+    const resolved = resolveMediaUrl(post.image_url);
+    const thumbSource: ImageSourcePropType = resolved
+        ? { uri: resolved }
         : require("../../assets/images/brend1.png");
 
     return (

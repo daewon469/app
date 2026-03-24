@@ -14,6 +14,30 @@ const extra: any =
   {};
 
 export const API_URL: string = (extra?.apiBaseUrl as string) ?? "https://api.daewon469.com";
+
+// 서버/DB/관리자 설정 등에 과거 도메인이 남아있을 수 있어,
+// 클라이언트에서 이미지/정적 리소스 URL을 현재 API_URL 기준으로 보정합니다.
+export const resolveMediaUrl = (raw?: string | null): string | null => {
+  const u = String(raw ?? "").trim();
+  if (!u) return null;
+
+  // 로컬/데이터 스킴은 그대로 사용
+  if (/^(data:|file:|content:|asset:|expo:)/i.test(u)) return u;
+
+  // 프로토콜 상대 URL(//host/path)
+  if (u.startsWith("//")) return `https:${u}`;
+
+  // 상대경로 static
+  if (u.startsWith("/static/")) return `${API_URL}${u}`;
+  if (u.startsWith("static/")) return `${API_URL}/${u}`;
+
+  // 레거시 도메인 보정
+  const replaced = u
+    .replace(/^https?:\/\/api\.smartgauge\.co\.kr(\/|$)/i, `${API_URL}$1`)
+    .replace(/^https?:\/\/smartgauge\.co\.kr(\/|$)/i, `${API_URL}$1`);
+
+  return replaced;
+};
 export type PostInput = Omit<
   Post,
   "id" | "author" | "created_at" | "province" | "city" | "liked" | "other_role_name" | "other_role_fee"

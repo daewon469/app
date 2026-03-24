@@ -1,7 +1,8 @@
 import { Link } from "expo-router";
+import { Image } from "expo-image";
 import React from "react";
-import { Image, Pressable, Text as RNText, StyleSheet, View } from "react-native";
-import type { Post } from "../../lib/api";
+import { Pressable, Text as RNText, StyleSheet, View } from "react-native";
+import { resolveMediaUrl, type Post } from "../../lib/api";
 import Heart from "./heart";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -27,6 +28,7 @@ const styles = StyleSheet.create({
 export default function Postcard({ post, disableImageZoom = false }: { post: Post; disableImageZoom?: boolean }) {
   // 목록 카드에서는 이미지 확대 모달을 사용하지 않습니다.
   void disableImageZoom;
+  const imageUri = resolveMediaUrl(post.image_url);
 
   // 지역(산업/지역) 라벨: 업종/지역 도시 (ex: 아파트/경기 고양시)
   const industryProvinceCity = `${post.job_industry}/${formatProvinceCity(post.province, (post as any)?.city)}`;
@@ -47,9 +49,11 @@ export default function Postcard({ post, disableImageZoom = false }: { post: Pos
             }}
           />
           <View style={{ flexDirection: "row" }}>
-            {post.image_url && (
+            {imageUri && (
               <Image
-                source={{ uri: post.image_url }}
+                source={{ uri: imageUri }}
+                cachePolicy="memory-disk"
+                contentFit="cover"
                 style={{ width: 100, height: 100, borderRadius: 4, margin: 6, marginBottom: 0 }}
               />
             )}

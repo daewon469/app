@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from "expo-notifications";
 import { router, usePathname } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, Text as RNText, View } from "react-native";
-import { Appbar, Portal } from "react-native-paper";
+import { Alert, Platform, Pressable, Text as RNText, ScrollView, StyleSheet, View } from "react-native";
+import { Portal } from "react-native-paper";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useModalBackHandler } from "../../hooks/useModalBackHandler";
 import { Notify } from "../../lib/api";
@@ -35,10 +35,37 @@ export default function TopBar() {
   const [list, setList] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [markingAll, setMarkingAll] = useState(false);
-  // 상단바 탭(아이콘/라벨) 크기 통일: 기존(대부분 24/13)에서 -1
-  const TAB_ICON_SIZE = 23;
-  const TAB_LABEL_FONT_SIZE = 15;
-  const HEADER_HEIGHT = 48; // SafeArea(top) 제외 높이
+  const IS_IOS = Platform.OS === "ios";
+  const HEADER_BG = "#0B1B3A";
+
+  // 상단바 탭(아이콘/라벨) 수치: iOS는 더 슬림하게
+  const TAB_ICON_SIZE =  23;
+  const TAB_ICON_BOX_HEIGHT = 26;
+  const TAB_LABEL_FONT_SIZE =  15;
+  const TAB_LABEL_LINE_HEIGHT = 13;
+  // 헤더 본체 높이(SafeArea(top) 제외 높이)
+  const HEADER_HEIGHT = IS_IOS ? 44 : 56;
+  const TAB_PADDING_VERTICAL = IS_IOS ? 1 : 6;
+  // 헤더 두께는 유지하고, iOS에서 콘텐츠만 살짝 위로
+  const TAB_PADDING_TOP = IS_IOS ? 0 : TAB_PADDING_VERTICAL;
+  const TAB_PADDING_BOTTOM = IS_IOS ? 2 : TAB_PADDING_VERTICAL;
+  const HEADER_BORDER_WIDTH = IS_IOS ? StyleSheet.hairlineWidth : 1;
+  const tabHitSlop = IS_IOS ? { top: 8, bottom: 8, left: 6, right: 6 } : undefined;
+  const NOTI_ICON_WRAPPER_SIZE = IS_IOS ? 21 : 26;
+  const NOTI_BADGE_OFFSET = IS_IOS ? 4 : 6;
+  const tabLabelStyle = {
+    fontSize: TAB_LABEL_FONT_SIZE,
+    lineHeight: TAB_LABEL_LINE_HEIGHT,
+    fontWeight: "bold" as const,
+    color: "white",
+  };
+  const tabButtonStyle = {
+    flex: 1,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingTop: TAB_PADDING_TOP,
+    paddingBottom: TAB_PADDING_BOTTOM,
+  };
 
   useModalBackHandler(open, () => setOpen(false));
 
@@ -165,168 +192,147 @@ export default function TopBar() {
 
   return (
     <View style={{ position: "relative" }}>
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#0B1B3A" }}>
-        <Appbar.Header
-          mode="center-aligned"
-          statusBarHeight={0}
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: HEADER_BG }}>
+        <View
           style={{
             height: HEADER_HEIGHT,
-            backgroundColor: "#0B1B3A",
+            backgroundColor: HEADER_BG,
+            flexDirection: "row",
             justifyContent: "flex-start",
-            borderBottomWidth: 1,
-            borderColor: "black",
+            borderBottomWidth: HEADER_BORDER_WIDTH,
+            borderBottomColor: "black",
             overflow: "visible",
           }}
         >
-
-        <Pressable
-          onPress={async () => {
-            if (!isLogin || !username) {
-              Alert.alert("알림", "로그인이 필요합니다.");
-              return;
-            }
-            Alert.alert(
-              "안내",
-              "재등록을 위해 내 구인글 관리로 이동하시겠습니까?",
-              [
-                {
-                  text: "재등록",
-                  onPress: () => router.push("/mypage"),
-                },
-                {
-                  text: "신규등록",
-                
-                  style: "cancel",
-                  onPress: () => router.push("/write"),
-                },
-              ],
-              { cancelable: true },
-            );
-          }}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 4,
-          }}
-        >
-          <Ionicons name="create" size={TAB_ICON_SIZE} color="white" />
-          <Text style={{ fontSize: TAB_LABEL_FONT_SIZE, fontWeight: "bold", color: "white" }}>
-            구인등록
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/list4")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 4,
-          }}
-        >
-          <Ionicons name="megaphone" size={TAB_ICON_SIZE} color="white" />
-          <Text style={{ fontSize: TAB_LABEL_FONT_SIZE, fontWeight: "bold", color: "white" }}>
-            광고
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push("/list")}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 4,
-          }}
-        >
-          <Ionicons name="home" size={TAB_ICON_SIZE} color="white" />
-          <Text style={{ fontSize: TAB_LABEL_FONT_SIZE, fontWeight: "bold", color: "white" }}>
-            첫화면
-          </Text>
-        </Pressable>
-
-        {isLogin ? (
           <Pressable
-            onPress={() => {
-              if (!username) {
+            hitSlop={tabHitSlop}
+            onPress={async () => {
+              if (!isLogin || !username) {
                 Alert.alert("알림", "로그인이 필요합니다.");
                 return;
               }
-              setOpen((v) => !v);
+              Alert.alert(
+                "안내",
+                "재등록을 위해 내 구인글 관리로 이동하시겠습니까?",
+                [
+                  {
+                    text: "재등록",
+                    onPress: () => router.push("/mypage"),
+                  },
+                  {
+                    text: "신규등록",
+
+                    style: "cancel",
+                    onPress: () => router.push("/write"),
+                  },
+                ],
+                { cancelable: true },
+              );
             }}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingVertical: 4,
-            }}
+            style={tabButtonStyle}
           >
-            <View style={{ position: "relative", width: 26, height: 26, alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="notifications" size={TAB_ICON_SIZE} color="white" />
-              {unreadCount > 0 && (
-                <View
-                  style={{
-                    position: "absolute",
-                    top: -6,
-                    right: -6,
-                    minWidth: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    backgroundColor: "red",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    paddingHorizontal: 4,
-                    borderWidth: 2,
-                    borderColor: "#0B1B3A",
-                  }}
-                >
-                  <Text style={{ color: "white", fontSize: 10, fontWeight: "bold" }}>
-                    {unreadCount}
-                  </Text>
-                </View>
-              )}
+            <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
+              <Ionicons name="create" size={TAB_ICON_SIZE} color="white" />
             </View>
-            <Text style={{ fontSize: TAB_LABEL_FONT_SIZE, fontWeight: "bold", color: "white" }}>
-              알림
-            </Text>
+            <Text style={tabLabelStyle}>구인등록</Text>
           </Pressable>
-        ) : (
+
           <Pressable
-            onPress={() => router.push("/login")}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-              paddingVertical: 4,
-            }}
+            hitSlop={tabHitSlop}
+            onPress={() => router.push("/list4")}
+            style={tabButtonStyle}
           >
-            <Ionicons name="log-in" size={TAB_ICON_SIZE} color="white" />
-            <Text style={{ fontSize: TAB_LABEL_FONT_SIZE, fontWeight: "bold", color: "white" }}>
-              로그인
-            </Text>
+            <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
+              <Ionicons name="megaphone" size={TAB_ICON_SIZE} color="white" />
+            </View>
+            <Text style={tabLabelStyle}>광고</Text>
           </Pressable>
-        )}
 
-        <Pressable
-          onPress={() => {
-            if (isLogin) router.push("/myboard");
-            else router.push("/check2");
-          }}
-          style={{
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 4,
-          }}
-        >
-          <Ionicons name="person" size={TAB_ICON_SIZE} color="white" />
-          <Text style={{ fontSize: TAB_LABEL_FONT_SIZE, fontWeight: "bold", color: "white" }}>
-            {isLogin ? "마이메뉴" : "회원가입"}
-          </Text>
-        </Pressable>
+          <Pressable
+            hitSlop={tabHitSlop}
+            onPress={() => router.push("/list")}
+            style={tabButtonStyle}
+          >
+            <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
+              <Ionicons name="home" size={TAB_ICON_SIZE} color="white" />
+            </View>
+            <Text style={tabLabelStyle}>첫화면</Text>
+          </Pressable>
 
-        </Appbar.Header>
+          {isLogin ? (
+            <Pressable
+              hitSlop={tabHitSlop}
+              onPress={() => {
+                if (!username) {
+                  Alert.alert("알림", "로그인이 필요합니다.");
+                  return;
+                }
+                setOpen((v) => !v);
+              }}
+              style={tabButtonStyle}
+            >
+              <View
+                style={{
+                  position: "relative",
+                  width: NOTI_ICON_WRAPPER_SIZE,
+                  height: NOTI_ICON_WRAPPER_SIZE,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="notifications" size={TAB_ICON_SIZE} color="white" />
+                {unreadCount > 0 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -NOTI_BADGE_OFFSET,
+                      right: -NOTI_BADGE_OFFSET,
+                      minWidth: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: "red",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      paddingHorizontal: 4,
+                      borderWidth: 2,
+                      borderColor: HEADER_BG,
+                    }}
+                  >
+                    <Text style={{ color: "white", fontSize: 10, fontWeight: "bold" }}>
+                      {unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={tabLabelStyle}>알림</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              hitSlop={tabHitSlop}
+              onPress={() => router.push("/login")}
+              style={tabButtonStyle}
+            >
+              <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
+                <Ionicons name="log-in" size={TAB_ICON_SIZE} color="white" />
+              </View>
+              <Text style={tabLabelStyle}>로그인</Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            hitSlop={tabHitSlop}
+            onPress={() => {
+              if (isLogin) router.push("/myboard");
+              else router.push("/check2");
+            }}
+            style={tabButtonStyle}
+          >
+            <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
+              <Ionicons name="person" size={TAB_ICON_SIZE} color="white" />
+            </View>
+            <Text style={tabLabelStyle}>{isLogin ? "마이메뉴" : "회원가입"}</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
 
       <Portal>

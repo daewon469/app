@@ -1,5 +1,6 @@
 import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
 import { getSession } from "@/utils/session";
+import { Image as ExpoImage } from "expo-image";
 import { router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentProps } from "react";
@@ -7,7 +8,7 @@ import type { ScrollView as RNScrollView } from "react-native";
 import {
   Animated,
   Dimensions,
-  Image,
+  Image as RNImage,
   Linking,
   Modal,
   Pressable,
@@ -17,7 +18,7 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Card } from "react-native-paper";
-import { Auth, type Post } from "../../lib/api";
+import { Auth, resolveMediaUrl, type Post } from "../../lib/api";
 import BusinessIddPicker from "../BusinessIdPicker";
 import ScrollNavigator from "../ScrollNavigator";
 import WorkIdPicker from "../workIdPicker";
@@ -85,6 +86,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
   const label = { fontSize: 16, color: colors.text } as const;
   const sub = { color: "#000" } as const;
   const welfareItems: { label: string; value?: string }[] = [];
+  const imageUri = resolveMediaUrl(post.image_url);
 
   const wonOrSupport = (v?: string | null) => {
     const s = String(v ?? "").trim();
@@ -374,9 +376,9 @@ export default function Postcard_detail({ post }: { post: Post }) {
             </View>
 
 
-            {post.image_url && (
+            {imageUri && (
               <DynamicImage
-                uri={post.image_url}
+                uri={imageUri}
                 onPress={(e) => {
                   // 이미지 탭은 모달만 열기
                   setImageZoomVisible(true);
@@ -718,9 +720,9 @@ export default function Postcard_detail({ post }: { post: Post }) {
             {/* content (gesture-friendly) */}
             <View style={{ flex: 1, padding: 12 }}>
               <View style={{ flex: 1, borderRadius: 14, overflow: "hidden" }}>
-                {post.image_url ? (
+                {imageUri ? (
                   <View style={{ flex: 1 }}>
-                    <ZoomableImage uri={post.image_url} />
+                    <ZoomableImage uri={imageUri} />
                     {/* 워터마크: 제스처/탭 방해 X */}
                     <View
                       pointerEvents="none"
@@ -870,7 +872,7 @@ function DynamicImage({ uri, onPress }: { uri: string; onPress?: (e: any) => voi
   const cardWidth = screenWidth - horizontalPadding * 2;
 
   useEffect(() => {
-    Image.getSize(uri, (width, height) => {
+    RNImage.getSize(uri, (width, height) => {
       const scale = cardWidth / width; // 
       setHeight(height * scale);
     });
@@ -889,12 +891,13 @@ function DynamicImage({ uri, onPress }: { uri: string; onPress?: (e: any) => voi
           position: "relative",
         }}
       >
-        <Image
+        <ExpoImage
           source={{ uri }}
+          cachePolicy="memory-disk"
+          contentFit="cover"
           style={{
             width: "100%",
             height: "100%",
-            resizeMode: "cover",
             alignSelf: "center",
           }}
         />

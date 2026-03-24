@@ -314,6 +314,14 @@ ${INSTALL_URL}
         }
     };
 
+    const handleUploadMigration = () => {
+        if (!username) {
+            Alert.alert("알림", "로그인이 필요합니다.");
+            return;
+        }
+        router.push("/migrationfiles");
+    };
+
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
             <Animated.ScrollView
@@ -1788,6 +1796,7 @@ ${INSTALL_URL}
                 thumbOpacity={1.0}
                 barWidth={4}
             />
+
         </View>
     );
 }
