@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
+import { Image as ExpoImage } from "expo-image";
 import React from "react";
-import { Image, Pressable, Text, View, type ImageSourcePropType } from "react-native";
+import { Pressable, Text, View, type ImageSourcePropType } from "react-native";
 import { resolveMediaUrl, type Post } from "../../lib/api";
 import Heart from "./heart2";
 
@@ -41,8 +42,10 @@ function PostcardTitleOnly({ post }: { post: Post }) {
                 <View>
                     <View style={{ flexDirection: "row", alignItems: "center", paddingRight: 34 }}>
                         {/* 제목 왼쪽 이미지(썸네일) */}
-                        <Image
+                        <ExpoImage
                             source={thumbSource}
+                            cachePolicy="memory-disk"
+                            contentFit="cover"
                             style={{
                                 width: 33,
                                 height: 33,

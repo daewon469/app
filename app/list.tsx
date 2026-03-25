@@ -37,6 +37,8 @@ const FILTER_PAGE_SIZE = 333;
 const MAP_PAGE_SIZE = 500;
 const MAP_CHUNK_SIZE = 100;
 const PREFETCH_TRIGGER_PX = 2200;
+const PREFETCH_CHECK_INTERVAL_MS = 180;
+const LONG_LIST_THRESHOLD = 700;
 // 출석체크(출첵) 버튼/팝업 강제 노출 스위치
 // - 서버 출석 상태(미출석/출석완료)와 무관하게 버튼을 항상 보이게 합니다.
 // - 배포 전에는 false로 되돌리세요.
@@ -44,7 +46,7 @@ const FORCE_ATTENDANCE_CTA = false;
 // 관리자 설정 팝업(UIConfig.popup) 임시 강제 노출 스위치
 // - "오늘 다시 보지 않기"를 눌러도 무조건 다시 노출합니다(날짜 체크 무시).
 // - 배포 전에는 false로 되돌리세요.
-const FORCE_UI_POPUP = false;
+const FORCE_UI_POPUP = true;
 
 const toProvinceShort = (name?: string) => {
   const raw = String(name ?? "").trim();
@@ -1199,6 +1201,7 @@ ${INSTALL_URL}
   // 무한스크롤: 다음 cursor가 있으면 다음 페이지를 이어서 로드
   const hasNextPage = !!cursor;
   const pendingNextPageRef = useRef<number | null>(null);
+  const lastPrefetchCheckAtRef = useRef(0);
   const requestNextPage = useCallback(async () => {
     if (!hasNextPage) return false;
     if (loadingRef.current) return false;
@@ -1223,6 +1226,9 @@ ${INSTALL_URL}
     (evt: any) => {
       if (!hasNextPage) return;
       if (loadingRef.current) return;
+      const now = Date.now();
+      if (now - lastPrefetchCheckAtRef.current < PREFETCH_CHECK_INTERVAL_MS) return;
+      lastPrefetchCheckAtRef.current = now;
 
       const ne = evt?.nativeEvent;
       const contentHeight = Number(ne?.contentSize?.height ?? 0);
@@ -1789,6 +1795,10 @@ ${INSTALL_URL}
     uiConfigLoaded,
     windowWidth,
   ]);
+  const isLongList = listFeedItems.length >= LONG_LIST_THRESHOLD;
+  const maxToRenderPerBatch = isLongList ? 4 : 6;
+  const windowSizeValue = isLongList ? 5 : 7;
+  const updateCellsBatchingPeriodValue = isLongList ? 80 : 50;
 
   return (
     <View style={{ flex: 1 }}>
@@ -1946,9 +1956,9 @@ ${INSTALL_URL}
         }}
         onEndReachedThreshold={0.45}
         initialNumToRender={6}
-        maxToRenderPerBatch={6}
-        updateCellsBatchingPeriod={50}
-        windowSize={7}
+        maxToRenderPerBatch={maxToRenderPerBatch}
+        updateCellsBatchingPeriod={updateCellsBatchingPeriodValue}
+        windowSize={windowSizeValue}
         removeClippedSubviews={Platform.OS === "android"}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],

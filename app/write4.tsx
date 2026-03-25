@@ -1,4 +1,5 @@
 import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
+import { Image as ExpoImage } from "expo-image";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -7,7 +8,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
     Animated,
-    Image,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -642,14 +642,15 @@ export default function AdPostWrite() {
                     <Text style={[label, { marginBottom: 8, fontSize: 16 }]}>광고 이미지</Text>
                     {imageUri && (
                         <View style={{ marginBottom: 8 }}>
-                            <Image
+                            <ExpoImage
                                 source={{ uri: imageUri }}
+                                cachePolicy="memory-disk"
+                                contentFit="cover"
                                 style={{
                                     width: "100%",
                                     height: 180,
                                     borderRadius: 12,
                                 }}
-                                resizeMode="cover"
                             />
 
                             {/* X 버튼 */}

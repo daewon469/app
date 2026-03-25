@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useModalBackHandler } from "../../hooks/useModalBackHandler";
 import { Popup } from "../../lib/api";
@@ -21,15 +21,11 @@ type Props = {
   username?: string | null;
 };
 
-export default function PointEventModal({ visible, onClose, onDontShowToday }: Props) {
-  const [dontShowToday, setDontShowToday] = useState(false);
-
+function PointEventModal({ visible, onClose, onDontShowToday }: Props) {
   useModalBackHandler(visible, onClose);
 
-  // 모달을 다시 열 때 체크 상태 초기화(이전 상태 잔존 방지)
-  useEffect(() => {
-    if (visible) setDontShowToday(false);
-  }, [visible]);
+  // 숨김 상태에서는 모달 트리를 렌더하지 않아 불필요한 계산을 줄입니다.
+  if (!visible) return null;
 
   const colors = useMemo(
     () => ({
@@ -54,7 +50,6 @@ export default function PointEventModal({ visible, onClose, onDontShowToday }: P
 
   const handleDontShowAndClose = () => {
     // 즉시 닫히도록: 체크 → 오늘 숨김 저장 → close
-    setDontShowToday(true);
     onClose();
 
     // 방문자 집계 기준: "오늘 다시 보이지 않기" 클릭 시점에 서버 popup_last_seen_at 갱신
@@ -218,3 +213,5 @@ export default function PointEventModal({ visible, onClose, onDontShowToday }: P
     </Modal>
   );
 }
+
+export default React.memo(PointEventModal);

@@ -1,6 +1,7 @@
 import { Link } from "expo-router";
+import { Image as ExpoImage } from "expo-image";
 import React from "react";
-import { Image, Pressable, StyleSheet, Text as RNText, View } from "react-native";
+import { Pressable, StyleSheet, Text as RNText, View } from "react-native";
 import { resolveMediaUrl, type Post } from "../../lib/api";
 import Heart from "./heart2";
 
@@ -46,8 +47,10 @@ function Postcard({ post, disableImageZoom = false }: { post: Post; disableImage
           />
           <View style={{ flexDirection: "row" }}>
             {imageUri && (
-              <Image
+              <ExpoImage
                 source={{ uri: imageUri }}
+                cachePolicy="memory-disk"
+                contentFit="cover"
                 style={{ width: 70, height: 70, borderRadius: 4, margin: 4, marginBottom: 4 }}
               />
             )}
