@@ -46,7 +46,7 @@ const FORCE_ATTENDANCE_CTA = false;
 // 관리자 설정 팝업(UIConfig.popup) 임시 강제 노출 스위치
 // - "오늘 다시 보지 않기"를 눌러도 무조건 다시 노출합니다(날짜 체크 무시).
 // - 배포 전에는 false로 되돌리세요.
-const FORCE_UI_POPUP = true;
+const FORCE_UI_POPUP = false;
 
 const toProvinceShort = (name?: string) => {
   const raw = String(name ?? "").trim();
