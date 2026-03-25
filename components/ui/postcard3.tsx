@@ -1,9 +1,10 @@
 import { Link } from "expo-router";
+import React from "react";
 import { Image, Pressable, Text, View, type ImageSourcePropType } from "react-native";
 import { resolveMediaUrl, type Post } from "../../lib/api";
 import Heart from "./heart2";
 
-export default function PostcardTitleOnly({ post }: { post: Post }) {
+function PostcardTitleOnly({ post }: { post: Post }) {
     const resolved = resolveMediaUrl(post.image_url);
     const thumbSource: ImageSourcePropType = resolved
         ? { uri: resolved }
@@ -71,3 +72,5 @@ export default function PostcardTitleOnly({ post }: { post: Post }) {
         </Link>
     );
 }
+
+export default React.memo(PostcardTitleOnly);

@@ -29,12 +29,14 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
-// customlike(/community/posts/custom)는 서버에서 조건 적용 후 반환하므로 누락이 적습니다.
-// list는 클라이언트 후처리 필터를 사용하므로, 희소한 조건(예: 서울+아파트+본부장) 누락을 줄이기 위해
-// 서버 허용 최대치(100)로 1회 로드량을 상향합니다.
-const PAGE_SIZE = 1000;
+// 첫화면 체감 성능 최적화:
+// - 기본은 333개로 시작
+// - 맞춤필터 활성 시에도 동일한 333개 기준으로 로드
+const PAGE_SIZE = 333;
+const FILTER_PAGE_SIZE = 333;
 const MAP_PAGE_SIZE = 500;
 const MAP_CHUNK_SIZE = 100;
+const PREFETCH_TRIGGER_PX = 2200;
 // 출석체크(출첵) 버튼/팝업 강제 노출 스위치
 // - 서버 출석 상태(미출석/출석완료)와 무관하게 버튼을 항상 보이게 합니다.
 // - 배포 전에는 false로 되돌리세요.
@@ -465,6 +467,7 @@ export default function Postlist() {
       resize_mode?: "contain" | "cover" | "stretch";
     };
   } | null>(null);
+  const [uiConfigLoaded, setUiConfigLoaded] = useState(false);
   const [uiPopupVisible, setUiPopupVisible] = useState(false);
   const [referralModalVisible, setReferralModalVisible] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
@@ -871,6 +874,7 @@ ${INSTALL_URL}
   useFocusEffect(
     useCallback(() => {
       let alive = true;
+      setUiConfigLoaded(false);
       (async () => {
         try {
           const res = await UIConfig.get();
@@ -880,6 +884,9 @@ ${INSTALL_URL}
           }
         } catch {
           // ignore
+        } finally {
+          if (!alive) return;
+          setUiConfigLoaded(true);
         }
       })();
       return () => {
@@ -1151,11 +1158,12 @@ ${INSTALL_URL}
           }
         }
 
+        const requestLimit = isCustomViewActive ? FILTER_PAGE_SIZE : PAGE_SIZE;
         const { items: fetchedItems = [], next_cursor } = await Posts.list({
           username,
           cursor: reset ? undefined : pageCursor,
           status: "published",
-          limit: PAGE_SIZE,
+          limit: requestLimit,
           province,
           city,
           regions,
@@ -1164,7 +1172,7 @@ ${INSTALL_URL}
         // 서버가 next_cursor를 "항상" 내려주는 경우가 있어서,
         // 실제로 다음 페이지가 존재하는지(=limit 만큼 꽉 찼는지)로 보정합니다.
         const effectiveNextCursor =
-          fetchedItems.length >= PAGE_SIZE ? next_cursor : undefined;
+          fetchedItems.length >= requestLimit ? next_cursor : undefined;
 
         if (reset || pageNum === 1) {
           setItems(fetchedItems);
@@ -1185,17 +1193,51 @@ ${INSTALL_URL}
         setLoading(false);
       }
     },
-    [selectedRegionsKey, selectedRegions, username, pageCursors]
+    [selectedRegionsKey, selectedRegions, username, pageCursors, isCustomViewActive]
   );
 
   // 무한스크롤: 다음 cursor가 있으면 다음 페이지를 이어서 로드
   const hasNextPage = !!cursor;
+  const pendingNextPageRef = useRef<number | null>(null);
+  const requestNextPage = useCallback(async () => {
+    if (!hasNextPage) return false;
+    if (loadingRef.current) return false;
+    const nextPageNum = pageCursors.size + 1; // 1부터 순차 로드
+    if (pendingNextPageRef.current === nextPageNum) return false;
+    pendingNextPageRef.current = nextPageNum;
+    try {
+      await load(nextPageNum, false);
+      return true;
+    } finally {
+      if (pendingNextPageRef.current === nextPageNum) {
+        pendingNextPageRef.current = null;
+      }
+    }
+  }, [hasNextPage, load, pageCursors.size]);
   const loadMore = useCallback(async () => {
     if (!hasNextPage) return;
     if (loadingRef.current) return;
-    const nextPageNum = pageCursors.size + 1; // 1부터 순차 로드
-    await load(nextPageNum, false);
-  }, [hasNextPage, load, pageCursors.size]);
+    await requestNextPage();
+  }, [hasNextPage, requestNextPage]);
+  const maybePrefetchNextPage = useCallback(
+    (evt: any) => {
+      if (!hasNextPage) return;
+      if (loadingRef.current) return;
+
+      const ne = evt?.nativeEvent;
+      const contentHeight = Number(ne?.contentSize?.height ?? 0);
+      const viewportHeight = Number(ne?.layoutMeasurement?.height ?? 0);
+      const offsetY = Number(ne?.contentOffset?.y ?? 0);
+      if (contentHeight <= 0 || viewportHeight <= 0) return;
+
+      const remain = contentHeight - (offsetY + viewportHeight);
+      if (remain > PREFETCH_TRIGGER_PX) return;
+
+      // onEndReached 전에 한 박자 먼저 다음 페이지를 준비
+      void requestNextPage();
+    },
+    [hasNextPage, requestNextPage]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -1439,6 +1481,315 @@ ${INSTALL_URL}
     layoutHeight,
   }), [contentHeight, layoutHeight]);
 
+  const listKeyExtractor = useCallback((it: any) => {
+    // Post(id) 또는 배너(key) 모두 고유 key 보장
+    const key = it?.key ?? it?.id;
+    return String(key);
+  }, []);
+
+  const renderFeedItem = useCallback(({ item }: { item: any; index: number }) => {
+    if (item?.kind === "image_banner") {
+      const link = String(item?.link_url ?? "").trim();
+      const clickAction = normalizeBannerClickAction(item?.click_action);
+      const isReferral = isReferralModalAction(clickAction) || isReferralModalLinkUrl(link);
+      const hasLink = Boolean(link);
+      const bannerHeight = Math.max(
+        60,
+        Math.min(
+          260,
+          Number(item?.height ?? uiConfig?.banner?.height ?? 110) || 110
+        )
+      );
+      const bannerResizeMode = (() => {
+        const rm = String(item?.resize_mode ?? (uiConfig?.banner as any)?.resize_mode ?? "contain");
+        return rm === "cover" || rm === "stretch" ? rm : "contain";
+      })();
+
+      const bannerWidthPxRaw = Number((item as any)?.width_px ?? NaN);
+      const hasWidthPx = Number.isFinite(bannerWidthPxRaw) && bannerWidthPxRaw > 0;
+      const bannerWidthPx = hasWidthPx
+        ? Math.max(120, Math.min(windowWidth - 24, bannerWidthPxRaw))
+        : null;
+
+      const bannerWidthPercent = Math.max(40, Math.min(100, Number(item?.width_percent ?? 100) || 100));
+      return (
+        <Pressable
+          onPress={async () => {
+            if (isReferral) {
+              await openReferralModalFromBanner();
+              return;
+            }
+            if (!hasLink) return;
+            try {
+              const ok = await Linking.canOpenURL(link);
+              if (!ok) {
+                Alert.alert("오류", "해당 링크를 열 수 없습니다.");
+                return;
+              }
+              await Linking.openURL(link);
+            } catch {
+              Alert.alert("오류", "링크를 열 수 없습니다.");
+            }
+          }}
+          disabled={!isReferral && !hasLink}
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 0,
+            marginBottom: 6,
+            overflow: "hidden",
+            borderWidth: 1,
+            borderColor: "#000",
+            width: bannerWidthPx ?? `${bannerWidthPercent}%`,
+            alignSelf: "center",
+          }}
+        >
+          <ExpoImage
+            source={{ uri: String(resolveMediaUrl(item?.image_url) ?? item?.image_url) }}
+            style={{ width: "100%", height: bannerHeight, backgroundColor: "#f2f2f2" }}
+            cachePolicy="memory-disk"
+            contentFit={bannerResizeMode === "stretch" ? "fill" : bannerResizeMode}
+          />
+        </Pressable>
+      );
+    }
+
+    const post = item as Post;
+    const shouldShowType3Separator =
+      typeMeta.has2 &&
+      typeMeta.has3 &&
+      firstType3PostId &&
+      String((post as any).id) === String(firstType3PostId);
+
+    return (
+      <View>
+        {shouldShowType3Separator ? (
+          <View
+            style={{
+              height: 2,
+              backgroundColor: "#000",
+              marginVertical: 8,
+              borderRadius: 2,
+            }}
+          />
+        ) : null}
+
+        <View
+          style={{
+            backgroundColor: "#fff",
+            borderRadius: 15,
+            marginBottom: 4,
+            overflow: "hidden",
+            padding: 1,
+            borderWidth: 1,
+            borderColor: "black",
+          }}
+        >
+          <GuardedTouch
+            enabled={!Boolean(storedIsLogin)}
+            onRequireLogin={() => {
+              Alert.alert("알림", "로그인이 필요합니다.");
+            }}
+          >
+            {renderListCard(post)}
+          </GuardedTouch>
+        </View>
+      </View>
+    );
+  }, [
+    firstType3PostId,
+    openReferralModalFromBanner,
+    renderListCard,
+    storedIsLogin,
+    typeMeta.has2,
+    typeMeta.has3,
+    uiConfig?.banner,
+    windowWidth,
+  ]);
+
+  const listHeaderComponent = useMemo(() => (
+    <View>
+      {(() => {
+        if (!uiConfigLoaded) return null;
+        const tb: any = (uiConfig as any)?.top_banner ?? null;
+        // top_banner가 없거나(enabled가 누락) 아직 서버가 구버전일 때도,
+        // 이미지가 설정되어 있으면 우선 노출되도록 기본값은 ON으로 처리합니다.
+        const enabled = tb?.enabled !== false;
+        const topItems = Array.isArray(tb?.items) ? tb.items.filter((x: any) => Boolean(x?.image_url)) : [];
+        const slot1 = topItems[0] ?? null;
+        const slot2 = topItems[1] ?? null;
+        const height = Math.max(60, Math.min(260, Number(tb?.height ?? 70) || 70));
+        const resizeMode = (() => {
+          const rm = String(tb?.resize_mode ?? "contain");
+          return rm === "cover" || rm === "stretch" ? rm : "contain";
+        })();
+        const renderTopBanner = (it: any) => {
+          if (!enabled || !it?.image_url) return null;
+          const link = String(it?.link_url ?? "").trim();
+          const hasLink = Boolean(link);
+          const clickAction = normalizeBannerClickAction(it?.click_action);
+          const isReferral = isReferralModalAction(clickAction) || isReferralModalLinkUrl(link);
+          const itemHeight = Math.max(60, Math.min(260, Number(it?.height ?? height) || height));
+          const itemResizeMode = (() => {
+            const rm = String(it?.resize_mode ?? resizeMode);
+            return rm === "cover" || rm === "stretch" ? rm : "contain";
+          })();
+          const wpxRaw = Number(it?.width_px);
+          const hasWidthPx = Number.isFinite(wpxRaw) && wpxRaw > 0;
+          // 화면을 넘어가는 px 고정 너비는 "고정처럼" 보이므로, 현재 화면 폭에 맞춰 상한을 둡니다.
+          const widthPx = hasWidthPx ? Math.max(120, Math.min(windowWidth - 24, Math.floor(wpxRaw))) : null;
+          const wpRaw = Number(it?.width_percent);
+          const widthPercent =
+            Number.isFinite(wpRaw) && wpRaw > 0 ? Math.max(40, Math.min(100, Math.floor(wpRaw))) : 100;
+          const containerWidth: any = widthPx ?? `${widthPercent}%`;
+          return (
+            <Pressable
+              onPress={async () => {
+                if (isReferral) {
+                  await openReferralModalFromBanner();
+                  return;
+                }
+                if (!hasLink) return;
+                try {
+                  const ok = await Linking.canOpenURL(link);
+                  if (!ok) {
+                    Alert.alert("오류", "해당 링크를 열 수 없습니다.");
+                    return;
+                  }
+                  await Linking.openURL(link);
+                } catch {
+                  Alert.alert("오류", "링크를 열 수 없습니다.");
+                }
+              }}
+              disabled={!isReferral && !hasLink}
+              style={{
+                width: containerWidth,
+                alignSelf: "center",
+                height: itemHeight,
+                backgroundColor: "#FFF6D2",
+                borderWidth: 1,
+                borderColor: "black",
+                zIndex: 20,
+                justifyContent: "center",
+                alignItems: "center",
+                elevation: 4,
+                shadowColor: "#000",
+                borderRadius: 0,
+                shadowOpacity: 0.2,
+                marginBottom: 5,
+                shadowRadius: 4,
+                overflow: "hidden",
+              }}
+            >
+              <ExpoImage
+                source={{ uri: String(resolveMediaUrl(it.image_url) ?? it.image_url) }}
+                style={{ width: "100%", height: "100%", backgroundColor: "#f2f2f2" }}
+                cachePolicy="memory-disk"
+                contentFit={itemResizeMode === "stretch" ? "fill" : itemResizeMode}
+              />
+            </Pressable>
+          );
+        };
+
+        return (
+          <View>
+            {renderTopBanner(slot1)}
+            {renderTopBanner(slot2)}
+          </View>
+        );
+      })()}
+
+      <NewsPreviewSection />
+
+      {/* 분양 뉴스 카드 아래: 지역패널(항상 노출) */}
+      <View style={{ paddingTop: 6, paddingBottom: 0 }}>
+        <View
+          style={{
+            backgroundColor: "#f9f9f9",
+            borderWidth: 1,
+            borderColor: "#000",
+            borderRadius: 14,
+            paddingHorizontal: 6,
+            paddingTop: 0,
+            paddingBottom: 3,
+            marginBottom: 6,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 4,
+              minHeight: 35,
+            }}
+          >
+            <Text
+              style={{
+                color: "black",
+                fontSize: 16,
+                paddingLeft: 8,
+                fontWeight: "600",
+                lineHeight: 32,
+                height: 32,
+                textAlignVertical: "center",
+                includeFontPadding: false,
+              }}
+            >
+              지역 보기
+            </Text>
+
+            <Pressable
+              onPress={() => setRegionModalOpen(true)}
+              style={{
+                height: 32,
+                minHeight: 32,
+                paddingHorizontal: 0,
+                backgroundColor: "transparent",
+                borderRadius: 0,
+                borderWidth: 0,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              hitSlop={8}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", marginEnd: 5 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: "#4A6CF7",
+                    marginRight: 2,
+                  }}
+                >
+                  세부보기
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={"#4A6CF7"} />
+              </View>
+            </Pressable>
+          </View>
+          <View style={{ marginTop: -8 }}>
+            <TableGrid
+              items={QUICK_REGION_OPTIONS}
+              columns={6}
+              isActive={(v) =>
+                v === "전국" ? isNationwide : selectedProvinceShortsForQuickTable.includes(v)
+              }
+              onToggle={(v) => toggleQuickRegion(v)}
+            />
+          </View>
+        </View>
+      </View>
+    </View>
+  ), [
+    isNationwide,
+    openReferralModalFromBanner,
+    selectedProvinceShortsForQuickTable,
+    toggleQuickRegion,
+    uiConfig,
+    uiConfigLoaded,
+    windowWidth,
+  ]);
+
   return (
     <View style={{ flex: 1 }}>
       {/* 파란띠: 맞춤보기 / 지역보기 / 전국(티커) 모드 */}
@@ -1587,327 +1938,28 @@ ${INSTALL_URL}
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + 2 }}
         data={listFeedItems}
         ref={listRef}
-        keyExtractor={(it: any) => {
-          // Post(id) 또는 배너(key) 모두 고유 key 보장
-          const key = it?.key ?? it?.id;
-          return String(key);
-        }}
+        keyExtractor={listKeyExtractor}
         onEndReached={() => {
           if (!hasNextPage) return;
           if (loading) return;
           loadMore();
         }}
-        onEndReachedThreshold={0.6}
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
+        onEndReachedThreshold={0.45}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
         updateCellsBatchingPeriod={50}
-        windowSize={5}
+        windowSize={7}
         removeClippedSubviews={Platform.OS === "android"}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
             useNativeDriver: false,
+            listener: maybePrefetchNextPage,
           }
-        )
-        }
+        )}
         scrollEventThrottle={16}
-        ListHeaderComponent={
-          <View>
-            {(() => {
-              const tb: any = (uiConfig as any)?.top_banner ?? null;
-              // top_banner가 없거나(enabled가 누락) 아직 서버가 구버전일 때도,
-              // 이미지가 설정되어 있으면 우선 노출되도록 기본값은 ON으로 처리합니다.
-              const enabled = tb?.enabled !== false;
-              const topItems = Array.isArray(tb?.items) ? tb.items.filter((x: any) => Boolean(x?.image_url)) : [];
-              const slot1 = topItems[0] ?? null;
-              const slot2 = topItems[1] ?? null;
-              const height = Math.max(60, Math.min(260, Number(tb?.height ?? 70) || 70));
-              const resizeMode = (() => {
-                const rm = String(tb?.resize_mode ?? "contain");
-                return rm === "cover" || rm === "stretch" ? rm : "contain";
-              })();
-              // top_banner 설정이 존재하면(서버가 지원하는 경우) 관리자 설정 배너만 노출하고,
-              // 슬롯이 비어있을 때는 기본 텍스트 배너(fallback)를 숨기지 않습니다(빈 설정으로 인한 "배너 미노출" 오해 방지).
-              // 단, 관리자가 top_banner를 OFF로 내리면 fallback도 숨겨서 완전 비노출로 처리합니다.
-              const hasAnyTopBanner = topItems.length > 0;
-              const useAdminTopBannersOnly = tb?.enabled === false || hasAnyTopBanner;
-
-              const renderTopBanner = (it: any, fallback: React.ReactNode) => {
-                if (!enabled || !it?.image_url) return fallback;
-                const link = String(it?.link_url ?? "").trim();
-                const hasLink = Boolean(link);
-                const clickAction = normalizeBannerClickAction(it?.click_action);
-                const isReferral = isReferralModalAction(clickAction) || isReferralModalLinkUrl(link);
-                const itemHeight = Math.max(60, Math.min(260, Number(it?.height ?? height) || height));
-                const itemResizeMode = (() => {
-                  const rm = String(it?.resize_mode ?? resizeMode);
-                  return rm === "cover" || rm === "stretch" ? rm : "contain";
-                })();
-                const wpxRaw = Number(it?.width_px);
-                const hasWidthPx = Number.isFinite(wpxRaw) && wpxRaw > 0;
-                // 화면을 넘어가는 px 고정 너비는 "고정처럼" 보이므로, 현재 화면 폭에 맞춰 상한을 둡니다.
-                const widthPx = hasWidthPx ? Math.max(120, Math.min(windowWidth - 24, Math.floor(wpxRaw))) : null;
-                const wpRaw = Number(it?.width_percent);
-                const widthPercent =
-                  Number.isFinite(wpRaw) && wpRaw > 0 ? Math.max(40, Math.min(100, Math.floor(wpRaw))) : 100;
-                const containerWidth: any = widthPx ?? `${widthPercent}%`;
-                return (
-                  <Pressable
-                    onPress={async () => {
-                      if (isReferral) {
-                        await openReferralModalFromBanner();
-                        return;
-                      }
-                      if (!hasLink) return;
-                      try {
-                        const ok = await Linking.canOpenURL(link);
-                        if (!ok) {
-                          Alert.alert("오류", "해당 링크를 열 수 없습니다.");
-                          return;
-                        }
-                        await Linking.openURL(link);
-                      } catch {
-                        Alert.alert("오류", "링크를 열 수 없습니다.");
-                      }
-                    }}
-                    disabled={!isReferral && !hasLink}
-                    style={{
-                      width: containerWidth,
-                      alignSelf: "center",
-                      height: itemHeight,
-                      backgroundColor: "#FFF6D2",
-                      borderWidth: 1,
-                      borderColor: "black",
-                      zIndex: 20,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      elevation: 4,
-                      shadowColor: "#000",
-                      borderRadius: 0,
-                      shadowOpacity: 0.2,
-                      marginBottom: 5,
-                      shadowRadius: 4,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <ExpoImage
-                      source={{ uri: String(resolveMediaUrl(it.image_url) ?? it.image_url) }}
-                      style={{ width: "100%", height: "100%", backgroundColor: "#f2f2f2" }}
-                      cachePolicy="memory-disk"
-                      contentFit={itemResizeMode === "stretch" ? "fill" : itemResizeMode}
-                    />
-                  </Pressable>
-                );
-              };
-
-            
-              const fallback1 = useAdminTopBannersOnly ?? null;
-
-              
-              const fallback2 = useAdminTopBannersOnly ?? null;
-
-              return (
-                <View>
-                  {renderTopBanner(slot1, fallback1)}
-                  {renderTopBanner(slot2, fallback2)}
-                </View>
-              );
-            })()}
-
-            <NewsPreviewSection />
-
-            {/* 분양 뉴스 카드 아래: 지역패널(항상 노출) */}
-            <View style={{ paddingTop: 6, paddingBottom: 0 }}>
-              <View
-                style={{
-                  backgroundColor: "#f9f9f9",
-                  borderWidth: 1,
-                  borderColor: "#000",
-                  borderRadius: 14,
-                  paddingHorizontal: 6,
-                  paddingTop: 0,
-                  paddingBottom: 3,
-                  marginBottom: 6, 
-                }}
-              >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center", 
-                    justifyContent: "space-between",
-                    paddingHorizontal: 4,
-                    minHeight: 35, 
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "black",
-                      fontSize: 16,
-                      paddingLeft: 8,
-                      fontWeight:"600",
-                      lineHeight: 32, 
-                      height: 32, 
-                      textAlignVertical: "center", 
-                      includeFontPadding: false,
-                    }}
-                  >
-                    지역 보기
-                  </Text>
-
-                  <Pressable
-                    onPress={() => setRegionModalOpen(true)}
-                    style={{
-                      height: 32,
-                      minHeight: 32,
-                      paddingHorizontal: 0,
-                      backgroundColor: "transparent",
-                      borderRadius: 0,
-                      borderWidth: 0,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                    hitSlop={8}
-                  >
-                    <View style={{ flexDirection: "row", alignItems: "center", marginEnd:5 }}>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: "600",
-                          color: "#4A6CF7",
-                          marginRight: 2,
-                        }}
-                      >
-                        세부보기
-                      </Text>
-                      <Ionicons name="chevron-forward" size={16} color={"#4A6CF7"} />
-                    </View>
-                  </Pressable>
-                </View>
-                <View style={{ marginTop: -8 }}>
-                  <TableGrid
-                    items={QUICK_REGION_OPTIONS}
-                    columns={6}
-                    isActive={(v) =>
-                      v === "전국" ? isNationwide : selectedProvinceShortsForQuickTable.includes(v)
-                    }
-                    onToggle={(v) => toggleQuickRegion(v)}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
-        }
-
-        
-          renderItem={({ item, index }: { item: any; index: number }) => {
-            if (item?.kind === "image_banner") {
-              const link = String(item?.link_url ?? "").trim();
-              const clickAction = normalizeBannerClickAction(item?.click_action);
-              const isReferral = isReferralModalAction(clickAction) || isReferralModalLinkUrl(link);
-              const hasLink = Boolean(link);
-              const bannerHeight = Math.max(
-                60,
-                Math.min(
-                  260,
-                  Number(item?.height ?? uiConfig?.banner?.height ?? 110) || 110
-                )
-              );
-              const bannerResizeMode = (() => {
-                const rm = String(item?.resize_mode ?? (uiConfig?.banner as any)?.resize_mode ?? "contain");
-                return rm === "cover" || rm === "stretch" ? rm : "contain";
-              })();
-
-              const bannerWidthPxRaw = Number((item as any)?.width_px ?? NaN);
-              const hasWidthPx = Number.isFinite(bannerWidthPxRaw) && bannerWidthPxRaw > 0;
-              const bannerWidthPx = hasWidthPx
-                ? Math.max(120, Math.min(windowWidth - 24, bannerWidthPxRaw))
-                : null;
-
-              const bannerWidthPercent = Math.max(40, Math.min(100, Number(item?.width_percent ?? 100) || 100));
-              return (
-                <Pressable
-                  onPress={async () => {
-                    if (isReferral) {
-                      await openReferralModalFromBanner();
-                      return;
-                    }
-                    if (!hasLink) return;
-                    try {
-                      const ok = await Linking.canOpenURL(link);
-                      if (!ok) {
-                        Alert.alert("오류", "해당 링크를 열 수 없습니다.");
-                        return;
-                      }
-                      await Linking.openURL(link);
-                    } catch {
-                      Alert.alert("오류", "링크를 열 수 없습니다.");
-                    }
-                  }}
-                  disabled={!isReferral && !hasLink}
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 0,
-                    marginBottom: 6,
-                    overflow: "hidden",
-                    borderWidth: 1,
-                    borderColor: "#000",
-                    width: bannerWidthPx ?? `${bannerWidthPercent}%`,
-                    alignSelf: "center",
-                  }}
-                >
-                  <ExpoImage
-                    source={{ uri: String(resolveMediaUrl(item?.image_url) ?? item?.image_url) }}
-                    style={{ width: "100%", height: bannerHeight, backgroundColor: "#f2f2f2" }}
-                    cachePolicy="memory-disk"
-                    contentFit={bannerResizeMode === "stretch" ? "fill" : bannerResizeMode}
-                  />
-                </Pressable>
-              );
-            }
-
-          const post = item as Post;
-          const shouldShowType3Separator =
-            typeMeta.has2 &&
-            typeMeta.has3 &&
-            firstType3PostId &&
-            String((post as any).id) === String(firstType3PostId);
-
-          return (
-            <View>
-              {shouldShowType3Separator ? (
-                <View
-                  style={{
-                    height: 2,
-                    backgroundColor: "#000",
-                    marginVertical: 8,
-                    borderRadius: 2,
-                  }}
-                />
-              ) : null}
-
-              <View
-                style={{
-                  backgroundColor: "#fff",
-                  borderRadius: 15,
-                  marginBottom: 4,
-                  overflow: "hidden",
-                  padding: 1,
-                  borderWidth: 1,
-                  borderColor: "black",
-                }}
-              >
-                <GuardedTouch
-                  enabled={!Boolean(storedIsLogin)}
-                  onRequireLogin={() => {
-                    Alert.alert("알림", "로그인이 필요합니다.");
-                  }}
-                >
-                  {renderListCard(post)}
-                </GuardedTouch>
-              </View>
-            </View>
-          );
-        }}
+        ListHeaderComponent={listHeaderComponent}
+        renderItem={renderFeedItem}
 
         refreshControl={
           <RefreshControl

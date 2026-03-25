@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function Postcard({ post, disableImageZoom = false }: { post: Post; disableImageZoom?: boolean }) {
+function Postcard({ post, disableImageZoom = false }: { post: Post; disableImageZoom?: boolean }) {
   // 목록 카드에서는 이미지 확대 모달을 사용하지 않습니다.
   void disableImageZoom;
   const imageUri = resolveMediaUrl(post.image_url);
@@ -145,3 +145,5 @@ function formatProvinceCity(province: any, city: any) {
   const cityOk = !!c && c !== "전체";
   return [prov, cityOk ? c : ""].filter(Boolean).join(" ");
 }
+
+export default React.memo(Postcard);

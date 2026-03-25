@@ -113,7 +113,7 @@ export default function NewsPreviewSection() {
             <Text
               style={{
                 fontSize: 16,
-                fontWeight: "400",
+                fontWeight: "600",
                 color: colors.text,
               }}
             >

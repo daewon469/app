@@ -1005,24 +1005,26 @@ export const Payments = {
 
 
 export type StatusType = "published" | "closed";
+// 목록 커서 형식: `${created_at_iso}__${post_id}`
+export type PostListCursor = string;
 
 export const Posts = {
   list: async (
     opts?: {
       username?: string;
-      cursor?: string;
+      cursor?: PostListCursor;
       status?: "published" | "closed";
       limit?: number;
       province?: string;
       city?: string;
       regions?: string; // 콤마로 구분된 복수 지역 코드
     }
-  ): Promise<{ items: Post[]; next_cursor?: string }> => {
+  ): Promise<{ items: Post[]; next_cursor?: PostListCursor }> => {
     const params: Record<string, any> = {};
     if (opts?.username) params.username = opts.username;
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
-    params.limit = opts?.limit ?? 1000; // 기본값 1000
+    params.limit = opts?.limit ?? 333; // 기본값 333
     if (opts?.province) params.province = opts.province;
     if (opts?.city) params.city = opts.city;
     if (opts?.regions) params.regions = opts.regions;
@@ -1040,20 +1042,20 @@ export const Posts = {
     postType: number,
     opts?: {
       username?: string;
-      cursor?: string;
+      cursor?: PostListCursor;
       status?: "published" | "closed";
       limit?: number;
       province?: string;
       city?: string;
       regions?: string; // 콤마로 구분된 복수 지역 코드
     }
-  ): Promise<{ items: Post[]; next_cursor?: string }> => {
+  ): Promise<{ items: Post[]; next_cursor?: PostListCursor }> => {
     const params: Record<string, any> = {};
 
     if (opts?.username) params.username = opts.username;
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
-    params.limit = opts?.limit ?? 1000; // 기본값 1000
+    params.limit = opts?.limit ?? 120; // 기본값 120
     if (opts?.province) params.province = opts.province;
     if (opts?.city) params.city = opts.city;
     if (opts?.regions) params.regions = opts.regions;
@@ -1072,16 +1074,16 @@ export const Posts = {
     q: string,
     opts?: {
       post_type?: number;
-      cursor?: string;
+      cursor?: PostListCursor;
       limit?: number;
       status?: "published" | "closed";
       username?: string;
     },
-  ): Promise<{ items: Post[]; next_cursor?: string }> => {
+  ): Promise<{ items: Post[]; next_cursor?: PostListCursor }> => {
     const params: Record<string, any> = {
       q: (q || "").trim(),
       post_type: opts?.post_type ?? 1,
-      limit: opts?.limit ?? 1000,
+      limit: opts?.limit ?? 120,
     };
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
@@ -1091,7 +1093,7 @@ export const Posts = {
   },
 
   mylist: async (postType: number, username: string, params?: {
-    cursor?: string;
+    cursor?: PostListCursor;
     limit?: number;
     status?: string;
   }) => {
@@ -1193,11 +1195,16 @@ export const Posts = {
     return data ?? { items: [], next_cursor: undefined };
   },
 
-  listCustom: async (opts?: { username?: string; cursor?: string; limit?: number; status?: "published" | "closed" }) => {
+  listCustom: async (opts?: {
+    username?: string;
+    cursor?: PostListCursor;
+    limit?: number;
+    status?: "published" | "closed";
+  }): Promise<{ items: Post[]; next_cursor?: PostListCursor }> => {
     const params: Record<string, any> = {};
     if (opts?.username) params.username = opts.username;
     if (opts?.cursor) params.cursor = opts.cursor;
-    params.limit = opts?.limit ?? 1000;
+    params.limit = opts?.limit ?? 120;
     if (opts?.status) params.status = opts.status;
     try {
       const { data } = await api.get(`/community/posts/custom`, { params });
