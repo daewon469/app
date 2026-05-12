@@ -47,6 +47,10 @@ const FORCE_ATTENDANCE_CTA = false;
 // - "오늘 다시 보지 않기"를 눌러도 무조건 다시 노출합니다(날짜 체크 무시).
 // - 배포 전에는 false로 되돌리세요.
 const FORCE_UI_POPUP = false;
+// 관리자 설정 팝업(UIConfig.popup) 임시 강제 비활성화 스위치
+// - true면 서버 설정과 무관하게 팝업을 노출하지 않습니다.
+// - 애플 심사 등 임시 비노출이 필요할 때 사용하고, 이후 false로 되돌리세요.
+const FORCE_DISABLE_UI_POPUP = true;
 
 const toProvinceShort = (name?: string) => {
   const raw = String(name ?? "").trim();
@@ -955,6 +959,12 @@ ${INSTALL_URL}
       let alive = true;
       (async () => {
         try {
+          // 임시 강제 비활성화: 서버 설정과 무관하게 팝업 노출 차단
+          if (FORCE_DISABLE_UI_POPUP) {
+            if (!alive) return;
+            setUiPopupVisible(false);
+            return;
+          }
           const cfg = uiConfig?.popup;
           if (!cfg?.enabled) return;
           if (!cfg?.image_url) return;

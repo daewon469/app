@@ -41,21 +41,18 @@ export default function TopBar() {
   // 상단바 탭(아이콘/라벨) 수치: iOS는 더 슬림하게
   const TAB_ICON_SIZE =  23;
   const TAB_ICON_BOX_HEIGHT = 26;
-  const TAB_LABEL_FONT_SIZE =  15;
-  const TAB_LABEL_LINE_HEIGHT = 13;
-  // 헤더 본체 높이(SafeArea(top) 제외 높이)
-  const HEADER_HEIGHT = IS_IOS ? 44 : 56;
-  const TAB_PADDING_VERTICAL = IS_IOS ? 1 : 6;
-  // 헤더 두께는 유지하고, iOS에서 콘텐츠만 살짝 위로
-  const TAB_PADDING_TOP = IS_IOS ? 0 : TAB_PADDING_VERTICAL;
-  const TAB_PADDING_BOTTOM = IS_IOS ? 2 : TAB_PADDING_VERTICAL;
+  const TAB_LABEL_FONT_SIZE = 15;
+  // 헤더 본체 높이(SafeArea(top) 제외 높이): 아이콘/텍스트 크기는 유지하고 전체 두께만 축소
+  const HEADER_HEIGHT = IS_IOS ? 40 : 50;
+  const TAB_PADDING_VERTICAL = IS_IOS ? 0 : 2;
+  const TAB_PADDING_TOP = TAB_PADDING_VERTICAL;
+  const TAB_PADDING_BOTTOM = TAB_PADDING_VERTICAL;
   const HEADER_BORDER_WIDTH = IS_IOS ? StyleSheet.hairlineWidth : 1;
   const tabHitSlop = IS_IOS ? { top: 8, bottom: 8, left: 6, right: 6 } : undefined;
   const NOTI_ICON_WRAPPER_SIZE = IS_IOS ? 21 : 26;
   const NOTI_BADGE_OFFSET = IS_IOS ? 4 : 6;
   const tabLabelStyle = {
     fontSize: TAB_LABEL_FONT_SIZE,
-    lineHeight: TAB_LABEL_LINE_HEIGHT,
     fontWeight: "bold" as const,
     color: "white",
   };
@@ -211,21 +208,32 @@ export default function TopBar() {
                 Alert.alert("알림", "로그인이 필요합니다.");
                 return;
               }
+              const registerActions: {
+                text: string;
+                style?: "default" | "cancel" | "destructive";
+                onPress?: () => void;
+              }[] = [
+                {
+                  text: "재등록",
+                  onPress: () => router.push("/mypage"),
+                },
+                {
+                  text: "신규등록",
+                  onPress: () => router.push("/write"),
+                },
+              ];
+
+              if (IS_IOS) {
+                registerActions.push({
+                  text: "닫기",
+                  style: "cancel",
+                });
+              }
+
               Alert.alert(
                 "안내",
                 "재등록을 위해 내 구인글 관리로 이동하시겠습니까?",
-                [
-                  {
-                    text: "재등록",
-                    onPress: () => router.push("/mypage"),
-                  },
-                  {
-                    text: "신규등록",
-
-                    style: "cancel",
-                    onPress: () => router.push("/write"),
-                  },
-                ],
+                registerActions,
                 { cancelable: true },
               );
             }}

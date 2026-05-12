@@ -844,7 +844,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
+                            <Text style={{ fontSize: 15, color: colors.text }}>
                                 내 구인글 <Text style={{ color: colors.subText }}>({mockCounts.jobs})</Text>
                             </Text>
                         </View>
@@ -869,7 +869,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
+                            <Text style={{ fontSize: 15, color: colors.text }}>
                                 내 수다글 <Text style={{ color: colors.subText }}>({mockCounts.talks})</Text>
                             </Text>
                         </View>
@@ -894,7 +894,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
+                            <Text style={{ fontSize: 15, color: colors.text }}>
                                 내 광고글 <Text style={{ color: colors.subText }}>({mockCounts.ads})</Text>
                             </Text>
                         </View>
@@ -919,7 +919,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, fontWeight: "400", color: colors.text }}>
+                            <Text style={{ fontSize: 15, color: colors.text }}>
                                 내 문의글 <Text style={{ color: colors.subText }}>({mockCounts.inquiries})</Text>
                             </Text>
                         </View>

@@ -12,7 +12,7 @@ const API_BASE_URL =
 const config: ExpoConfig = {
   name: "분양프로",
   slug: "mvp",
-  version: "1.1.2",
+  version: "1.1.3",
   orientation: "portrait",
   icon: "./assets/images/logo10.png",
   // TossPayments WebView 결제 성공/실패 딥링크 수신용
@@ -22,6 +22,7 @@ const config: ExpoConfig = {
   userInterfaceStyle: "light",
   newArchEnabled: false,
   ios: {
+    icon: "./assets/images/ios_icon.png",
     supportsTablet: true,
     bundleIdentifier: "com.smartgauge.bunyangpro",
   },
