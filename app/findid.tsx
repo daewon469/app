@@ -151,29 +151,27 @@ export default function FindIdScreen() {
         </View>
       </View>
 
-      {sent && !verified && (
-        <View>
-          <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
-          <View style={inputRowStyle}>
-            <TextInput
-              placeholder="인증번호 6자리"
-              placeholderTextColor="#666"
-              value={phoneCode}
-              onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-              keyboardType="number-pad"
-              maxLength={6}
-              style={{ flex: 1, padding: 12, color: colors.text }}
-            />
-            <TouchableOpacity
-              onPress={verifyCode}
-              disabled={verifying || !phoneCode.trim()}
-              style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: verifying ? 0.6 : 1 }}
-            >
-              <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
-            </TouchableOpacity>
-          </View>
+      <View>
+        <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
+        <View style={inputRowStyle}>
+          <TextInput
+            placeholder="인증번호 6자리"
+            placeholderTextColor="#666"
+            value={phoneCode}
+            onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+            keyboardType="number-pad"
+            maxLength={6}
+            style={{ flex: 1, padding: 12, color: colors.text }}
+          />
+          <TouchableOpacity
+            onPress={verifyCode}
+            disabled={verifying || !sent || !phoneCode.trim()}
+            style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: verifying || !sent ? 0.6 : 1 }}
+          >
+            <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
 
       <TouchableOpacity
         onPress={findId}

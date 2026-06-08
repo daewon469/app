@@ -87,8 +87,10 @@ export default function SignupScreen() {
           setPhoneVerified(false);
           setRegion(res.user.region || "");
         } else {
+          Alert.alert("오류", "회원 정보를 불러올 수 없습니다.");
         }
       } catch (e) {
+        Alert.alert("오류", "회원 정보를 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
       }
@@ -114,6 +116,8 @@ export default function SignupScreen() {
       }
       Alert.alert("오류", "인증번호 발송에 실패했습니다.");
     } catch (e: any) {
+      const detail = e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.";
+      Alert.alert("발송 실패", detail);
     } finally {
       setSendingSms(false);
     }
@@ -151,6 +155,8 @@ export default function SignupScreen() {
       }
       Alert.alert("오류", "인증에 실패했습니다. 다시 시도해주세요.");
     } catch (e: any) {
+      const detail = e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.";
+      Alert.alert("인증 실패", detail);
     } finally {
       setVerifyingCode(false);
     }
@@ -249,7 +255,8 @@ export default function SignupScreen() {
 
         Alert.alert("오류", "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
       } catch (e: any) {
-
+        const errorMessage = e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.";
+        Alert.alert("수정 실패", errorMessage);
       }
 
     } else {
@@ -288,17 +295,17 @@ export default function SignupScreen() {
         }
 
         if (res.status === 3) {
-          Alert.alert("알림", "입력되지 않은 항목이 있습니다!");
+          Alert.alert("알림", "성함을 입력해 주세요!");
           return;
         }
 
         if (res.status === 4) {
-          Alert.alert("알림", "입력되지 않은 항목이 있습니다!");
+          Alert.alert("알림", "전화번호를 입력해 주세요!");
           return;
         }
 
         if (res.status === 5) {
-          Alert.alert("알림", "입력되지 않은 항목이 있습니다!");
+          Alert.alert("알림", "거주지역을 입력해 주세요!");
           return;
         }
 
@@ -330,7 +337,8 @@ export default function SignupScreen() {
       } catch (e: any) {
         const status = e?.response?.status;
         const detail = e?.response?.data?.detail || e?.message || "";
-      
+        
+        // referral_code 생성 실패 (HTTP 409)
         if (status === 409) {
           if (detail.includes("referral_code")) {
             Alert.alert(
@@ -338,8 +346,18 @@ export default function SignupScreen() {
               "추천인 코드 생성에 실패했습니다. 관리자에게 문의해주세요."
             );
           } else {
+            Alert.alert("회원가입 실패", detail || "코드 생성 중 오류가 발생했습니다.");
           }
           return;
+        }
+        
+        // 네트워크 에러나 기타 에러
+        if (status === 400) {
+          Alert.alert("입력 오류", detail || "입력 정보를 확인해주세요.");
+        } else if (status === 500) {
+          Alert.alert("서버 오류", "서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        } else {
+          Alert.alert("회원가입 실패", detail || "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
         }
       }
     }
@@ -498,7 +516,7 @@ export default function SignupScreen() {
           </View>
         </View>
 
-        {canPhoneVerify && (
+        {canPhoneVerify && phoneSent && !phoneVerified && (
           <View>
             <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>※ 인증번호</Text>
             <View style={inputRowStyle}>
@@ -525,11 +543,6 @@ export default function SignupScreen() {
                 <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
               </TouchableOpacity>
             </View>
-            {!phoneSent && (
-              <Text style={{ color: colors.text, fontSize: 13, marginTop: 6 }}>
-                먼저 휴대폰 인증번호를 발송한 뒤 입력해 주세요.
-              </Text>
-            )}
           </View>
         )}
 
