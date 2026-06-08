@@ -46,7 +46,7 @@ export default function LoginScreen() {
       ]);
       router.replace("/list");
     } catch (e: any) {
-      Alert.alert("로그인 실패", e?.response?.data?.detail ?? "아이디 또는 비밀번호를 확인하세요");
+      Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인하세요");
     }
   }, [username, password, pushToken, router]);
 
@@ -164,7 +164,6 @@ async function getPushToken() {
 
     return token;
   } catch (err) {
-    console.log("푸시 토큰 획득 오류:", err);
     return null;
   }
 }

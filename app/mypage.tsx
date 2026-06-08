@@ -232,7 +232,7 @@ const fetchList = useCallback(
           {item.content}
         </Text>
         <Text style={{ fontSize: 12, color: colors.text }}>
-          상태: {statusLabel(item.status)} · 지역: {item.province} {item.city}
+          상태: {statusLabel(item.status)} · 지역: {item.province} {item.city} · {item.created_at?.substring(0, 10) || ''}
         </Text>
 
         <View

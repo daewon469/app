@@ -73,9 +73,7 @@ export default function ResetPasswordScreen() {
         Alert.alert("알림", "인증번호를 발송했습니다.");
         return;
       }
-      Alert.alert("오류", "인증번호 발송에 실패했습니다.");
     } catch (e: any) {
-      Alert.alert("발송 실패", e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.");
     } finally {
       setSending(false);
     }
@@ -101,9 +99,7 @@ export default function ResetPasswordScreen() {
       if (res.status === 2) return Alert.alert("알림", "인증번호가 만료되었습니다. 다시 발송해주세요.");
       if (res.status === 3) return Alert.alert("알림", "인증 시도 횟수를 초과했습니다. 다시 발송해주세요.");
       if (res.status === 4) return Alert.alert("알림", "인증번호가 올바르지 않습니다.");
-      Alert.alert("오류", "인증에 실패했습니다.");
     } catch (e: any) {
-      Alert.alert("인증 실패", e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.");
     } finally {
       setVerifying(false);
     }
@@ -142,9 +138,8 @@ export default function ResetPasswordScreen() {
         ], { cancelable: true });
         return;
       }
-      Alert.alert("실패", res.detail || "비밀번호 재설정에 실패했습니다.");
     } catch (e: any) {
-      Alert.alert("오류", e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.");
+
     } finally {
       setSaving(false);
     }
@@ -193,29 +188,32 @@ export default function ResetPasswordScreen() {
         </View>
       </View>
 
-      {sent && !verified && (
-        <View>
-          <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
-          <View style={inputRowStyle}>
-            <TextInput
-              placeholder="인증번호 6자리"
-              placeholderTextColor="#666"
-              value={phoneCode}
-              onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-              keyboardType="number-pad"
-              maxLength={6}
-              style={{ flex: 1, padding: 12, color: colors.text }}
-            />
-            <TouchableOpacity
-              onPress={verifyCode}
-              disabled={verifying || !phoneCode.trim()}
-              style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: verifying ? 0.6 : 1 }}
-            >
-              <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
-            </TouchableOpacity>
-          </View>
+      <View>
+        <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
+        <View style={inputRowStyle}>
+          <TextInput
+            placeholder="인증번호 6자리"
+            placeholderTextColor="#666"
+            value={phoneCode}
+            onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+            keyboardType="number-pad"
+            maxLength={6}
+            style={{ flex: 1, padding: 12, color: colors.text }}
+          />
+          <TouchableOpacity
+            onPress={verifyCode}
+            disabled={verifying || !phoneCode.trim()}
+            style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: verifying ? 0.6 : 1 }}
+          >
+            <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
+          </TouchableOpacity>
         </View>
-      )}
+        {!sent && (
+          <Text style={{ color: colors.text, fontSize: 13, marginTop: 6 }}>
+            먼저 인증번호를 발송한 뒤 입력해 주세요.
+          </Text>
+        )}
+      </View>
 
       <View>
         <Text style={{ color: colors.text, marginBottom: 6 }}>새 비밀번호</Text>

@@ -5,10 +5,11 @@ import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, Linking, Modal, Platform, Pressable, Text as RNText, Share, View } from "react-native";
+import { Alert, Animated, Linking, Platform, Pressable, Text as RNText, Share, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import ScrollNavigator from "../components/ScrollNavigator";
+import ReferralModal from "../components/ui/ReferralModal";
 import UserGradeBadge from "../components/ui/UserGradeBadge";
 import { API_URL, Auth, Referral, type MyPageSummaryResponse } from "../lib/api";
 import { getUserGradeLabel } from "../utils/userGrade";
@@ -561,7 +562,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 추천하기{" "}
                                 <Text style={{ color: colors.subText }}>
                                     (추천인코드 {summary?.referral_code || "없음"})
@@ -598,7 +599,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내가 추천한 회원{" "}
                                 <Text style={{ color: colors.subText }}>({referralCount}명)</Text>
                             </Text>
@@ -630,7 +631,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 추천인 랭킹
                             </Text>
                         </View>
@@ -662,7 +663,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 나의 추천인 인맥{" "}
                                 <Text style={{ color: colors.subText }}>({referralNetworkCount}명)</Text>
                             </Text>
@@ -693,7 +694,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 적립/사용 내역
                             </Text>
                         </View>
@@ -757,7 +758,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 캐시 충전
                             </Text>
 
@@ -788,7 +789,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 충전/사용 내역
                             </Text>
                         </View>
@@ -844,7 +845,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 구인글 <Text style={{ color: colors.subText }}>({mockCounts.jobs})</Text>
                             </Text>
                         </View>
@@ -869,7 +870,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 수다글 <Text style={{ color: colors.subText }}>({mockCounts.talks})</Text>
                             </Text>
                         </View>
@@ -894,7 +895,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 광고글 <Text style={{ color: colors.subText }}>({mockCounts.ads})</Text>
                             </Text>
                         </View>
@@ -919,7 +920,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 문의글 <Text style={{ color: colors.subText }}>({mockCounts.inquiries})</Text>
                             </Text>
                         </View>
@@ -950,7 +951,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 알림 내역
                             </Text>
                         </View>
@@ -1010,7 +1011,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 정보 수정
                             </Text>
                         </View>
@@ -1041,7 +1042,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 지역저장 설정
                             </Text>
                         </View>
@@ -1075,7 +1076,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 맞춤저장 설정
                             </Text>
                         </View>
@@ -1100,7 +1101,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 푸시알림 설정
                             </Text>
                         </View>
@@ -1149,7 +1150,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 공지사항
                             </Text>
 
@@ -1174,7 +1175,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 문의 및 건의사항
                             </Text>
                         </View>
@@ -1203,7 +1204,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 (주)대원파트너스 분양대행 문의
                             </Text>
                         </View>
@@ -1227,7 +1228,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 로그아웃
                             </Text>
                         </View>
@@ -1251,7 +1252,7 @@ ${INSTALL_URL}
                             style={{ marginRight: 10 }}
                         />
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, color: colors.text }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 회원탈퇴
                             </Text>
                         </View>
@@ -1260,128 +1261,20 @@ ${INSTALL_URL}
                 </View>
 
                 {/* 추천하기 모달 (카톡/문자) */}
-                <Modal
+                <ReferralModal
                     visible={referralModalVisible}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setReferralModalVisible(false)}
-                >
-                    <Pressable
-                        style={{
-                            flex: 1,
-                            backgroundColor: "rgba(0,0,0,0.4)",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            padding: 16,
-                        }}
-                        onPress={() => setReferralModalVisible(false)}
-                    >
-                        <Pressable
-                            onPress={(e) => e.stopPropagation()}
-                            style={{
-                                width: "100%",
-                                maxWidth: 380,
-                                borderRadius: 14,
-                                backgroundColor: colors.card,
-                                borderWidth: 1,
-                                borderColor: "#000",
-                                padding: 16,
-                            }}
-                        >
-                            <View
-                                style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    gap: 12,
-                                    marginBottom: 6,
-                                }}
-                            >
-                                <Text
-                                    style={{
-                                        fontSize: 16,
-                                        fontWeight: "700",
-                                        color: colors.text,
-                                    }}
-                                >
-                                    추천하기
-                                </Text>
-                                <Pressable
-                                    onPress={handleCopyReferralMessage}
-                                    hitSlop={8}
-                                    style={{
-                                        paddingHorizontal: 10,
-                                        paddingVertical: 6,
-                                        borderRadius: 8,
-                                        borderWidth: 1,
-                                        borderColor: "#000",
-                                        backgroundColor: "#fff",
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
-                                        복사하기
-                                    </Text>
-                                </Pressable>
-                            </View>
-                            <Text
-                                style={{
-                                    fontSize: 13,
-                                    color: colors.subText,
-                                    marginBottom: 12,
-                                    lineHeight: 18,
-                                }}
-                            >
-                                설치 링크와 추천인코드가 함께 전송됩니다.
-                            </Text>
-
-                            <View style={{ gap: 10 }}>
-                                <Pressable
-                                    onPress={handleRecommendKakao}
-                                    style={{
-                                        backgroundColor: "#FEE500",
-                                        borderRadius: 12,
-                                        paddingVertical: 12,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <Text style={{ color: "#111", fontWeight: "700", fontSize: 15 }}>
-                                        카톡 추천
-                                    </Text>
-                                </Pressable>
-
-                                <Pressable
-                                    onPress={handleRecommendSms}
-                                    style={{
-                                        backgroundColor: colors.primary,
-                                        borderRadius: 12,
-                                        paddingVertical: 12,
-                                        alignItems: "center",
-                                    }}
-                                >
-                                    <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
-                                        문자 추천
-                                    </Text>
-                                </Pressable>
-
-                                <Pressable
-                                    onPress={() => setReferralModalVisible(false)}
-                                    style={{
-                                        borderRadius: 12,
-                                        paddingVertical: 12,
-                                        alignItems: "center",
-                                        borderWidth: 1,
-                                        borderColor: colors.border,
-                                        backgroundColor: "#fff",
-                                    }}
-                                >
-                                    <Text style={{ color: colors.text, fontWeight: "700", fontSize: 15 }}>
-                                        취소
-                                    </Text>
-                                </Pressable>
-                            </View>
-                        </Pressable>
-                    </Pressable>
-                </Modal>
+                    onClose={() => setReferralModalVisible(false)}
+                    referralCode={referralCode}
+                    onCopy={handleCopyReferralMessage}
+                    onRecommendKakao={handleRecommendKakao}
+                    onRecommendSms={handleRecommendSms}
+                    colors={{
+                        card: colors.card,
+                        text: colors.text,
+                        border: colors.border,
+                        primary: colors.primary,
+                    }}
+                />
 
                 {/* 관리자 카드 섹션 */}
                 {canSeeAdminMenu && (
@@ -1424,7 +1317,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     공지사항 관리
                                 </Text>
                             </View>
@@ -1448,7 +1341,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                    문의 및 건의사항 확인
                                 </Text>
                             </View>
@@ -1472,7 +1365,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     회원 관리 <Text style={{ color: colors.subText }}>(관리자용)</Text>
                                 </Text>
                             </View>
@@ -1496,7 +1389,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     제목검색 추천현장 관리
                                 </Text>
                             </View>
@@ -1520,7 +1413,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     오늘의 현황
                                 </Text>
                             </View>
@@ -1544,7 +1437,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     추천 현황
                                 </Text>
                             </View>
@@ -1595,7 +1488,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     회원 관리 <Text style={{ color: colors.subText }}>(오너용)</Text>
                                 </Text>
                             </View>
@@ -1619,7 +1512,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     분양대행 문의 확인
                                 </Text>
                             </View>
@@ -1643,7 +1536,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     상단배너 관리
                                 </Text>
                             </View>
@@ -1667,7 +1560,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     하단배너 관리
                                 </Text>
                             </View>
@@ -1691,7 +1584,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     팝업창 관리
                                 </Text>
                             </View>
@@ -1716,7 +1609,7 @@ ${INSTALL_URL}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, color: colors.text }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     엑셀 다운로드
                                 </Text>
                             </View>
@@ -1843,7 +1736,7 @@ function StatBox({ label, value }: { label: string; value: string }) {
             <Text style={{ fontSize: 12, color: "#666", fontWeight: "700" }} numberOfLines={1}>
                 {label}
             </Text>
-            <Text style={{ marginTop: 4, fontSize: 16, fontWeight: "900", color: "#111" }} numberOfLines={1}>
+            <Text style={{ marginTop: 4, fontSize: 16, fontWeight: "bold", color: "#111" }} numberOfLines={1}>
                 {value}
             </Text>
         </View>

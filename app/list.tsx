@@ -21,6 +21,7 @@ import NewsPreviewSection from "../components/ui/newspreview";
 import PostCard from "../components/ui/postcard";
 import PostCard2 from "../components/ui/postcard2";
 import PostCard3 from "../components/ui/postcard3";
+import ReferralModal from "../components/ui/ReferralModal";
 import { Auth, Points, Posts, resolveMediaUrl, UIConfig, type Post, type UIConfigBannerItem } from "../lib/api";
 import { isReferralModalAction, isReferralModalLinkUrl, normalizeBannerClickAction } from "../lib/ui_banner_actions";
 import { getSession } from "../utils/session";
@@ -50,7 +51,7 @@ const FORCE_UI_POPUP = false;
 // 관리자 설정 팝업(UIConfig.popup) 임시 강제 비활성화 스위치
 // - true면 서버 설정과 무관하게 팝업을 노출하지 않습니다.
 // - 애플 심사 등 임시 비노출이 필요할 때 사용하고, 이후 false로 되돌리세요.
-const FORCE_DISABLE_UI_POPUP = true;
+const FORCE_DISABLE_UI_POPUP = false;
 
 const toProvinceShort = (name?: string) => {
   const raw = String(name ?? "").trim();
@@ -967,7 +968,7 @@ ${INSTALL_URL}
           }
           const cfg = uiConfig?.popup;
           if (!cfg?.enabled) return;
-          if (!cfg?.image_url) return;
+          if (!cfg?.image_url && !IS_IOS) return;
 
           // 임시 강제 노출: "오늘 다시 보지 않기" 무시
           if (FORCE_UI_POPUP) {
@@ -2379,7 +2380,7 @@ ${INSTALL_URL}
               borderColor: "#000",
             }}
           >
-            {uiConfig?.popup?.image_url ? (
+            {uiConfig?.popup?.image_url || IS_IOS ? (
               <Pressable
                 onPress={async () => {
                   const link = String(uiConfig?.popup?.link_url ?? "").trim();
@@ -2397,7 +2398,11 @@ ${INSTALL_URL}
                 }}
               >
                 <Image
-                  source={{ uri: String(resolveMediaUrl(uiConfig.popup.image_url) ?? uiConfig.popup.image_url) }}
+                  source={
+                    uiConfig?.popup?.image_url
+                      ? { uri: String(resolveMediaUrl(uiConfig.popup.image_url) ?? uiConfig.popup.image_url) }
+                      : require("../assets/images/df.png")
+                  }
                   style={{
                     width: "100%",
                     height: Math.max(200, Math.min(900, Number((uiConfig?.popup as any)?.height ?? 360) || 360)),
@@ -2459,128 +2464,20 @@ ${INSTALL_URL}
       </Modal>
 
       {/* 추천하기 모달 (카톡/문자) - 내 페이지와 동일 동작 */}
-      <Modal
+      <ReferralModal
         visible={referralModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setReferralModalVisible(false)}
-      >
-        <Pressable
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 16,
-          }}
-          onPress={() => setReferralModalVisible(false)}
-        >
-          <Pressable
-            onPress={(e) => e.stopPropagation()}
-            style={{
-              width: "100%",
-              maxWidth: 380,
-              borderRadius: 14,
-              backgroundColor: colors.card,
-              borderWidth: 1,
-              borderColor: "#000",
-              padding: 16,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                marginBottom: 6,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "700",
-                  color: colors.text,
-                }}
-              >
-                추천하기
-              </Text>
-              <Pressable
-                onPress={handleCopyReferralMessage}
-                hitSlop={8}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: "#000",
-                  backgroundColor: "#fff",
-                }}
-              >
-                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
-                  복사하기
-                </Text>
-              </Pressable>
-            </View>
-            <Text
-              style={{
-                fontSize: 13,
-                color: "#666",
-                marginBottom: 12,
-                lineHeight: 18,
-              }}
-            >
-              추천인코드가 함께 전송됩니다.
-            </Text>
-
-            <View style={{ gap: 10 }}>
-              <Pressable
-                onPress={handleRecommendKakao}
-                style={{
-                  backgroundColor: "#FEE500",
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#111", fontWeight: "700", fontSize: 15 }}>
-                  카톡 추천
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleRecommendSms}
-                style={{
-                  backgroundColor: colors.primary,
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
-                  문자 추천
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setReferralModalVisible(false)}
-                style={{
-                  borderRadius: 12,
-                  paddingVertical: 12,
-                  alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  backgroundColor: "#fff",
-                }}
-              >
-                <Text style={{ color: colors.text, fontWeight: "700", fontSize: 15 }}>
-                  취소
-                </Text>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        onClose={() => setReferralModalVisible(false)}
+        referralCode={referralCode}
+        onCopy={handleCopyReferralMessage}
+        onRecommendKakao={handleRecommendKakao}
+        onRecommendSms={handleRecommendSms}
+        colors={{
+          card: colors.card,
+          text: colors.text,
+          border: colors.border,
+          primary: colors.primary,
+        }}
+      />
 
       {/* Android: 기존 absolute 플로팅 버튼 배치 유지 (iOS는 공통 스택으로 통합) */}
       {!IS_IOS ? (

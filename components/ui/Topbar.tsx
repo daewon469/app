@@ -293,7 +293,7 @@ export default function TopBar() {
                   <View
                     style={{
                       position: "absolute",
-                      top: -NOTI_BADGE_OFFSET,
+                      top: 0.5,
                       right: -NOTI_BADGE_OFFSET,
                       minWidth: 18,
                       height: 18,

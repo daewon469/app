@@ -17,6 +17,9 @@
     "preview": {
       "distribution": "store",
       "channel": "preview",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-26.2"
+      },
       "android": {
         "image": "latest",
         "ndk": "27.1.12297006",
@@ -32,6 +35,9 @@
       "autoIncrement": true,
       "distribution": "store",
       "channel": "production",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-26.2"
+      },
       "android": { "buildType": "app-bundle" },
       "env": {
         "APP_ENV": "production",
@@ -42,7 +48,11 @@
   },
   "submit": {
     "production": {
-      "android": { "track": "production" }
+      "android": { "track": "production" },
+      "ios": {
+        "ascAppId": "6760890618",
+        "appleId": "36y4ws7@naver.com"
+      }
     }
   }
 }
