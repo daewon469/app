@@ -6,6 +6,12 @@ import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, Text as RNT
 import RegionSelectModal from "../components/RegionSelectModal";
 import ScrollNavigator from "../components/ScrollNavigator";
 import { Auth } from "../lib/api";
+import {
+  getApiErrorMessage,
+  resolvePhoneVerifyMessage,
+  resolveSignupMessage,
+  resolveUserUpdateMessage,
+} from "../lib/authErrors";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -89,8 +95,8 @@ export default function SignupScreen() {
         } else {
           Alert.alert("오류", "회원 정보를 불러올 수 없습니다.");
         }
-      } catch (e) {
-        Alert.alert("오류", "회원 정보를 불러오는데 실패했습니다.");
+      } catch (e: unknown) {
+        Alert.alert("오류", getApiErrorMessage(e, "회원 정보를 불러오는데 실패했습니다."));
       } finally {
         setLoading(false);
       }
@@ -115,9 +121,8 @@ export default function SignupScreen() {
         return;
       }
       Alert.alert("오류", "인증번호 발송에 실패했습니다.");
-    } catch (e: any) {
-      const detail = e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.";
-      Alert.alert("발송 실패", detail);
+    } catch (e: unknown) {
+      Alert.alert("발송 실패", getApiErrorMessage(e, "인증번호 발송에 실패했습니다."));
     } finally {
       setSendingSms(false);
     }
@@ -141,22 +146,14 @@ export default function SignupScreen() {
         Alert.alert("알림", "휴대폰 인증이 완료되었습니다.");
         return;
       }
-      if (res.status === 2) {
-        Alert.alert("알림", "인증번호가 만료되었습니다. 다시 발송해주세요.");
-        return;
-      }
-      if (res.status === 3) {
-        Alert.alert("알림", "인증 시도 횟수를 초과했습니다. 다시 발송해주세요.");
-        return;
-      }
-      if (res.status === 4) {
-        Alert.alert("알림", "인증번호가 올바르지 않습니다.");
+      const verifyMsg = resolvePhoneVerifyMessage(res.status);
+      if (verifyMsg) {
+        Alert.alert("알림", verifyMsg);
         return;
       }
       Alert.alert("오류", "인증에 실패했습니다. 다시 시도해주세요.");
-    } catch (e: any) {
-      const detail = e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.";
-      Alert.alert("인증 실패", detail);
+    } catch (e: unknown) {
+      Alert.alert("인증 실패", getApiErrorMessage(e, "인증에 실패했습니다. 다시 시도해주세요."));
     } finally {
       setVerifyingCode(false);
     }
@@ -187,6 +184,10 @@ export default function SignupScreen() {
       }
       if (!phoneVerified) {
         Alert.alert("알림", "휴대폰 인증을 완료해주세요.");
+        return;
+      }
+      if (!region.trim()) {
+        Alert.alert("알림", "거주지역을 입력해 주세요!");
         return;
       }
     }
@@ -240,23 +241,10 @@ export default function SignupScreen() {
           ]);
           return;
         }
-        if (res.status === 3) {
-          Alert.alert("알림", "비밀번호 확인이 필요합니다.");
-          return;
-        }
-        if (res.status === 4) {
-          Alert.alert("알림", "비밀번호와 비밀번호 확인이 일치하지 않습니다.");
-          return;
-        }
-        if (res.status === 9) {
-          Alert.alert("알림", res.detail || "휴대폰 인증이 필요합니다.");
-          return;
-        }
 
-        Alert.alert("오류", "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
-      } catch (e: any) {
-        const errorMessage = e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.";
-        Alert.alert("수정 실패", errorMessage);
+        Alert.alert("알림", resolveUserUpdateMessage(res.status, res.detail));
+      } catch (e: unknown) {
+        Alert.alert("수정 실패", getApiErrorMessage(e, "회원 정보 수정에 실패했습니다."));
       }
 
     } else {
@@ -284,81 +272,9 @@ export default function SignupScreen() {
           return;
         }
 
-        if (res.status === 1) {
-          Alert.alert("알림", "이미 등록된 닉네임[ID]이 있습니다!");
-          return;
-        }
-
-        if (res.status === 2) {
-          Alert.alert("알림", "비밀번호가 일치하지 않습니다!");
-          return;
-        }
-
-        if (res.status === 3) {
-          Alert.alert("알림", "성함을 입력해 주세요!");
-          return;
-        }
-
-        if (res.status === 4) {
-          Alert.alert("알림", "전화번호를 입력해 주세요!");
-          return;
-        }
-
-        if (res.status === 5) {
-          Alert.alert("알림", "거주지역을 입력해 주세요!");
-          return;
-        }
-
-        if (res.status === 6) {
-          Alert.alert("알림", res.detail || "추천인코드가 올바르지 않습니다!");
-          return;
-        }
-
-        if (res.status === 7) {
-          Alert.alert("알림", res.detail || "추천인코드는 1회만 적용할 수 있습니다.");
-          return;
-        }
-
-        if (res.status === 8) {
-          Alert.alert("알림", res.detail || "추천인 처리 중 DB 오류가 발생했습니다.");
-          return;
-        }
-
-        if (res.status === 9) {
-          Alert.alert("알림", res.detail || "휴대폰 인증이 필요합니다.");
-          return;
-        }
-
-        if ((res as any).status === 10) {
-          Alert.alert("알림", (res as any).detail || "이미 등록된 휴대폰 번호가 있습니다.");
-          return;
-        }
-        Alert.alert("오류", "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
-      } catch (e: any) {
-        const status = e?.response?.status;
-        const detail = e?.response?.data?.detail || e?.message || "";
-        
-        // referral_code 생성 실패 (HTTP 409)
-        if (status === 409) {
-          if (detail.includes("referral_code")) {
-            Alert.alert(
-              "회원가입 실패",
-              "추천인 코드 생성에 실패했습니다. 관리자에게 문의해주세요."
-            );
-          } else {
-            Alert.alert("회원가입 실패", detail || "코드 생성 중 오류가 발생했습니다.");
-          }
-          return;
-        }
-        
-        // 네트워크 에러나 기타 에러
-        if (status === 400) {
-          Alert.alert("입력 오류", detail || "입력 정보를 확인해주세요.");
-        } else if (status === 500) {
-          Alert.alert("서버 오류", "서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        } else {
-          Alert.alert("회원가입 실패", detail || "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
-        }
+        Alert.alert("알림", resolveSignupMessage(res.status, res.detail));
+      } catch (e: unknown) {
+        Alert.alert("회원가입 실패", getApiErrorMessage(e, "회원가입에 실패했습니다. 다시 시도해주세요."));
       }
     }
   };

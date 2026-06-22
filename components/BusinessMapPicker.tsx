@@ -1,11 +1,11 @@
 import { setBusinessLocation } from "@/store/LocationSlice";
 import React, { useEffect, useMemo } from "react";
-import { Alert, BackHandler, Modal, Pressable, SafeAreaView, Text as RNText, View } from "react-native";
+import { Alert, BackHandler, Modal, Pressable, Text as RNText, SafeAreaView, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { useDispatch, useSelector } from "react-redux";
+import { API_URL } from "../lib/api";
 import { RootState } from "../store";
 import { LocationSel } from "../utils/type";
-import { API_URL } from "../lib/api";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />

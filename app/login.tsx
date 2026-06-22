@@ -1,4 +1,5 @@
 import { Auth } from "@/lib/api";
+import { getApiErrorMessage, LOGIN_FAIL_MESSAGE } from "@/lib/authErrors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { Link, router } from "expo-router";
@@ -38,15 +39,23 @@ export default function LoginScreen() {
     try {
       const res = await Auth.logIn(username, password, pushToken ?? undefined);
 
-      Alert.alert("알림", "로그인 성공!");
-      await Promise.all([
-        SecureStore.setItemAsync('isLogin', 'true'),
-        SecureStore.setItemAsync('username', username),
-        SecureStore.setItemAsync('token', res?.token ?? ""),
-      ]);
-      router.replace("/list");
-    } catch (e: any) {
-      Alert.alert("로그인 실패", "아이디 또는 비밀번호를 확인하세요");
+      if (res.status === 0 && res.token) {
+        Alert.alert("알림", "로그인 성공!");
+        await Promise.all([
+          SecureStore.setItemAsync('isLogin', 'true'),
+          SecureStore.setItemAsync('username', username),
+          SecureStore.setItemAsync('token', res.token),
+        ]);
+        router.replace("/list");
+        return;
+      }
+
+      Alert.alert(
+        "로그인 실패",
+        res.status === 1 ? res.detail ?? LOGIN_FAIL_MESSAGE : LOGIN_FAIL_MESSAGE,
+      );
+    } catch (e: unknown) {
+      Alert.alert("로그인 실패", getApiErrorMessage(e, LOGIN_FAIL_MESSAGE));
     }
   }, [username, password, pushToken, router]);
 

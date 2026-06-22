@@ -1404,6 +1404,30 @@ ${INSTALL_URL}
                                 borderTopWidth: 1,
                                 borderTopColor: colors.border,
                             }}
+                            onPress={() => router.push("/slidepostsadmin")}
+                        >
+                            <Ionicons
+                                name="albums-outline"
+                                size={20}
+                                color={colors.primary}
+                                style={{ marginRight: 10 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                    슬라이드 현장 관리
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                        </Pressable>
+
+                        <Pressable
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                paddingVertical: 10,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
                             onPress={() => router.push("/todaystatus")}
                         >
                             <Ionicons

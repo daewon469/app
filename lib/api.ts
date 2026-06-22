@@ -86,7 +86,9 @@ api.interceptors.response.use(
   }
 );
 
-export type AuthResponse = { user_id: number; token: string };
+export type LoginResponse =
+  | { status: 0; user_id: number; token: string }
+  | { status: 1; detail?: string };
 export type PhoneSendResponse = { status: number; verification_id?: string; expires_in_sec?: number };
 export type PhoneVerifyResponse = { status: number; verified: boolean };
 export type FindUsernameResponse = { status: number; items: string[] };
@@ -313,8 +315,8 @@ export type LikedListResponse<T = any> = {
 }
 
 export const Auth = {
-  logIn: async (username: string, password: string, pushToken?: string): Promise<AuthResponse> => {
-    const { data } = await api.post<AuthResponse>("/community/login", {
+  logIn: async (username: string, password: string, pushToken?: string): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>("/community/login", {
        username,
        password,
        push_token:pushToken 
@@ -636,6 +638,9 @@ export type UIConfigResponse = {
       enabled: boolean;
       recommended_post_ids: number[];
     };
+    slide_posts?: {
+      post_ids: number[];
+    };
   };
 };
 
@@ -651,6 +656,7 @@ export const UIConfig = {
             top_banner: { enabled: true, items: [], height: 70, resize_mode: "contain" },
             popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
             title_search: { enabled: true, recommended_post_ids: [] },
+            slide_posts: { post_ids: [] },
           },
         }
       );
@@ -663,6 +669,7 @@ export const UIConfig = {
           top_banner: { enabled: true, items: [], height: 70, resize_mode: "contain" },
           popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
           title_search: { enabled: true, recommended_post_ids: [] },
+          slide_posts: { post_ids: [] },
         },
       };
     }
