@@ -1,9 +1,14 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Modal, Pressable, Text as RNText, View } from "react-native";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
+
+function spacedLabel(text: string): string {
+  return text.replace(/\s/g, "").split("").join(" ");
+}
 
 type ReferralModalProps = {
   visible: boolean;
@@ -29,6 +34,12 @@ export default function ReferralModal({
   onRecommendSms,
   colors,
 }: ReferralModalProps) {
+  const buttonTextStyle = {
+    fontWeight: "700" as const,
+    fontSize: 15,
+    letterSpacing: 6,
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
@@ -58,7 +69,6 @@ export default function ReferralModal({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              gap: 12,
               marginBottom: 6,
             }}
           >
@@ -71,21 +81,8 @@ export default function ReferralModal({
             >
               추천하기
             </Text>
-            <Pressable
-              onPress={onCopy}
-              hitSlop={8}
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: "#000",
-                backgroundColor: "#fff",
-              }}
-            >
-              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>
-                복사하기
-              </Text>
+            <Pressable onPress={onClose} hitSlop={8}>
+              <Ionicons name="close-circle-outline" size={26} color={colors.text} />
             </Pressable>
           </View>
 
@@ -98,8 +95,8 @@ export default function ReferralModal({
             }}
           >
             {referralCode
-              ? `추천인코드(${referralCode})가 함께 전송됩니다.`
-              : "추천인코드가 함께 전송됩니다."}
+              ? `추천인코드(${referralCode})와 링크가 함께 발송됩니다.`
+              : "추천인코드와 링크가 함께 발송됩니다."}
           </Text>
 
           <View style={{ gap: 10 }}>
@@ -112,8 +109,8 @@ export default function ReferralModal({
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: "#111", fontWeight: "700", fontSize: 15 }}>
-                카톡 추천
+              <Text style={{ ...buttonTextStyle, color: "#111" }}>
+                {spacedLabel("카 톡  추 천")}
               </Text>
             </Pressable>
 
@@ -126,8 +123,22 @@ export default function ReferralModal({
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
-                문자 추천
+              <Text style={{ ...buttonTextStyle, color: "#fff" }}>
+                {spacedLabel("문 자  추 천")}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={onCopy}
+              style={{
+                backgroundColor: "#22C55E",
+                borderRadius: 12,
+                paddingVertical: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ ...buttonTextStyle, color: "#fff" }}>
+                {spacedLabel("복 사   하 기")}
               </Text>
             </Pressable>
 
@@ -142,8 +153,8 @@ export default function ReferralModal({
                 backgroundColor: "#fff",
               }}
             >
-              <Text style={{ color: colors.text, fontWeight: "700", fontSize: 15 }}>
-                취소
+              <Text style={{ ...buttonTextStyle, color: colors.text }}>
+                {spacedLabel("취 소")}
               </Text>
             </Pressable>
           </View>

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../../utils/secureStorage";
 import React, { useEffect, useMemo } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useModalBackHandler } from "../../hooks/useModalBackHandler";

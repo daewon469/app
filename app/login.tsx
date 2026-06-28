@@ -3,9 +3,10 @@ import { getApiErrorMessage, LOGIN_FAIL_MESSAGE } from "@/lib/authErrors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { Link, router } from "expo-router";
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from '../utils/secureStorage';
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { isPushNotificationsSupported } from "../utils/notifications";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -29,6 +30,8 @@ export default function LoginScreen() {
     link: "blue",
   };
   useEffect(() => {
+    if (!isPushNotificationsSupported) return;
+
     async function initPush() {
       const ptoken = await getPushToken();
       setPushToken(ptoken);
@@ -152,6 +155,8 @@ export default function LoginScreen() {
   );
 }
 async function getPushToken() {
+  if (!isPushNotificationsSupported) return null;
+
   try {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {

@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, Text as RNText, View } from "react-native";
 import { Auth, Notify } from "../lib/api";
 import { getSession } from "../utils/session";
+import { setBadgeCountSafe } from "../utils/notifications";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -52,7 +52,7 @@ export default function NotiPage() {
   const syncBadgeAndCount = useCallback(async (u: string) => {
     try {
       const count = await Notify.getUnreadCount(u);
-      await Notifications.setBadgeCountAsync(count);
+      await setBadgeCountSafe(count);
       return count;
     } catch {
       return null;
@@ -151,7 +151,7 @@ export default function NotiPage() {
         await Notify.markAllNotificationsRead(list.map((v) => v.id));
       }
       setList((prev) => prev.map((v) => ({ ...v, is_read: true })));
-      await Notifications.setBadgeCountAsync(0);
+      await setBadgeCountSafe(0);
     } catch (e) {
       console.warn("모두 확인 처리 실패:", e);
     } finally {

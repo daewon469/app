@@ -3,7 +3,7 @@ import { Image as ExpoImage } from "expo-image";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
@@ -30,6 +30,7 @@ import ScrollNavigator from "../components/ScrollNavigator";
 import NaverMap from "../components/ui/navermap";
 import { API_URL, Posts } from "../lib/api";
 import { buildKakaoMapUrl } from "../utils/map";
+import { inputFontWeightStyle } from "../utils/inputStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -696,7 +697,7 @@ export default function AdPostWrite() {
                         placeholderTextColor={colors.subText}
                         value={title}
                         onChangeText={setTitle}
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(title)]}
                         editable={!isPreview}
                     />
                 </View>
@@ -710,7 +711,7 @@ export default function AdPostWrite() {
                         value={highlight}
                         onChangeText={setHighlight}
                         maxLength={40}
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(highlight)]}
                         editable={!isPreview}
                     />
                 </View>
@@ -723,7 +724,7 @@ export default function AdPostWrite() {
                         placeholderTextColor={colors.subText}
                         value={companyAgency}
                         onChangeText={setCompanyAgency}
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(companyAgency)]}
                         editable={!isPreview}
                     />
                 </View>
@@ -735,7 +736,7 @@ export default function AdPostWrite() {
                         placeholderTextColor={colors.subText}
                         value={agent}
                         onChangeText={setAgent}
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(agent)]}
                         editable={!isPreview}
                     />
                 </View>
@@ -748,7 +749,7 @@ export default function AdPostWrite() {
                         value={agencyCall}
                         onChangeText={v => setAgencyCall(mobile(v))}
                         keyboardType="phone-pad"
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(agencyCall)]}
                         editable={!isPreview}
                     />
                 </View>
@@ -836,7 +837,7 @@ export default function AdPostWrite() {
                                                 [role]: text,
                                             }))
                                         }
-                                        style={inputStyle}
+                                        style={[inputStyle, inputFontWeightStyle(workText[role])]}
                                         editable={!isPreview}
                                     />
                                 </View>
@@ -863,7 +864,7 @@ export default function AdPostWrite() {
                                     setContentInputHeight(Math.max(200, Math.ceil(h)));
                                 }
                         }
-                        style={[inputStyle, { height: contentInputHeight, textAlignVertical: "top" }]}
+                        style={[inputStyle, { height: contentInputHeight, textAlignVertical: "top" }, inputFontWeightStyle(content)]}
                         editable={!isPreview}
                     />
                 </View>

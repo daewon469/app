@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Animated, FlatList, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
 import ScrollNavigator from "../components/ScrollNavigator";

@@ -3,6 +3,7 @@ import { Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, 
 import { WebView } from "react-native-webview";
 import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
 import { API_URL } from "../../lib/api";
+import { inputFontWeightStyle } from "../../utils/inputStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -58,6 +59,7 @@ export default function AddressSection({
             padding: 12,
             backgroundColor: "#fff",
             color: "#000000",
+            ...inputFontWeightStyle(address),
           }}
         />
       </TouchableOpacity>

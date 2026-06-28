@@ -21,6 +21,8 @@ type Props = {
 
   // 복수 선택(맞춤현장용)
   multiple?: boolean;
+  /** true면 시·도만 선택하고 시·군·구 단계로 넘어가지 않음 */
+  singleStep?: boolean;
   selectedRegions?: Array<{ province: string; city: string }>;
   onApply?: (regions: Array<{ province: string; city: string }>) => void;
 };
@@ -364,6 +366,7 @@ export default function RegionSelectModal({
   onClose,
   onSelect,
   multiple = false,
+  singleStep = false,
   selectedRegions = [],
   onApply,
 }: Props) {
@@ -494,10 +497,17 @@ export default function RegionSelectModal({
                     }
 
                     if (p === "전체") {
-                      onSelect("전체", "");
+                      onSelect("전체", "전체");
                       onClose();
                       return;
                     }
+
+                    if (singleStep) {
+                      onSelect(p, "전체");
+                      onClose();
+                      return;
+                    }
+
                     onSelect(p, "");
 
                     if (REGION_MAP[p]?.length > 1) {

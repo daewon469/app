@@ -1,5 +1,5 @@
 import { Posts } from "@/lib/api";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../../utils/secureStorage";
 import React, { useEffect, useState } from "react";
 import { Alert, Pressable, Text, ViewStyle } from "react-native";
 

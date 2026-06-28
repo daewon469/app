@@ -7,7 +7,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 import { Image as ExpoImage } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Animated, BackHandler, Easing, FlatList, Image, Linking, Modal, Platform, Pressable, RefreshControl, Text as RNText, Share, ToastAndroid, TouchableOpacity, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,9 +21,16 @@ import NewsPreviewSection from "../components/ui/newspreview";
 import PostCard from "../components/ui/postcard";
 import PostCard2 from "../components/ui/postcard2";
 import PostCard3 from "../components/ui/postcard3";
+import PostCardS from "../components/ui/postcards";
+import PostcardSSlider from "../components/ui/PostcardSSlider";
 import ReferralModal from "../components/ui/ReferralModal";
 import { Auth, Points, Posts, resolveMediaUrl, UIConfig, type Post, type UIConfigBannerItem } from "../lib/api";
 import { isReferralModalAction, isReferralModalLinkUrl, normalizeBannerClickAction } from "../lib/ui_banner_actions";
+import {
+  isCardTypeS,
+  orderSlidePosts,
+  resolveSlidePosts,
+} from "../utils/postCardFormat";
 import { getSession } from "../utils/session";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -313,6 +320,8 @@ export default function Postlist() {
   const [storedIsLogin, setStoredIsLogin] = useState(false);
   const [username, setUsername] = useState<string | undefined>(undefined);
   const [items, setItems] = useState<Post[]>([]);
+  const [slidePostIds, setSlidePostIds] = useState<number[]>([]);
+  const [slidePosts, setSlidePosts] = useState<Post[]>([]);
   // "맞춤 보기" 임시 필터(저장 X)
   const [customFilterVisible, setCustomFilterVisible] = useState(false);
   const [customFilter, setCustomFilter] = useState<CustomFilterValue>({
@@ -888,6 +897,15 @@ ${INSTALL_URL}
           if (!alive) return;
           if (res?.status === 0) {
             setUiConfig(res.config);
+            setSlidePostIds(
+              Array.from(
+                new Set(
+                  (res.config.slide_posts?.post_ids ?? [])
+                    .map((v) => Number(v))
+                    .filter((n) => Number.isFinite(n) && n > 0)
+                )
+              )
+            );
           }
         } catch {
           // ignore
@@ -1256,6 +1274,27 @@ ${INSTALL_URL}
     [hasNextPage, requestNextPage]
   );
 
+  const loadSlidePosts = useCallback(async () => {
+    try {
+      const resolved = await resolveSlidePosts(slidePostIds, {
+        username,
+        maxItems: 20,
+      });
+      setSlidePosts(resolved);
+    } catch {
+      /* 목록은 이미 표시 중 — 슬라이드만 조용히 실패 */
+    }
+  }, [username, slidePostIds]);
+
+  useEffect(() => {
+    void loadSlidePosts();
+  }, [loadSlidePosts]);
+
+  const postcardS = useMemo(
+    () => orderSlidePosts(slidePosts, slidePostIds),
+    [slidePosts, slidePostIds]
+  );
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
@@ -1263,20 +1302,21 @@ ${INSTALL_URL}
         // 목록/마커를 다시 로드하지 않아 지도 화면이 "새로고침"처럼 보이지 않게 함
         if (mapSearchOpen) return;
         setRefreshing(true);
-        await load(1, true);
+        await Promise.all([load(1, true), loadSlidePosts()]);
         setRefreshing(false);
       })();
-    }, [load, mapSearchOpen])
+    }, [load, loadSlidePosts, mapSearchOpen])
   );
 
-  // card_type별 정렬 (type1, type2, type3 순서)
+  // card_type별 정렬 (type1, type2, type3 순서) — 5유형(슬라이드)은 별도 영역
   const orderedItemsRaw = useMemo(() => {
     if (!items || items.length === 0) {
       return [];
     }
-    const type1Items = items.filter((p) => p.card_type === 1);
-    const type2Items = items.filter((p) => p.card_type === 2);
-    const type3Items = items.filter((p) => p.card_type === 3);
+    const feedItems = items.filter((p) => !isCardTypeS(p.card_type));
+    const type1Items = feedItems.filter((p) => p.card_type === 1);
+    const type2Items = feedItems.filter((p) => p.card_type === 2);
+    const type3Items = feedItems.filter((p) => p.card_type === 3);
     return [...type1Items, ...type2Items, ...type3Items];
   }, [items]);
 
@@ -1427,6 +1467,7 @@ ${INSTALL_URL}
   }, [mapItems, mapSelectedPostId]);
 
   const renderListCard = useCallback((post: Post) => {
+    if (isCardTypeS(post.card_type)) return <PostCardS post={post} />;
     if (post.card_type === 3) return <PostCard3 post={post} />;
     // list.tsx에서는 이미지 탭으로 "확대(줌) 모달"로 연결되지 않게 처리
     if (post.card_type === 2) return <PostCard2 post={post} disableImageZoom />;
@@ -1796,11 +1837,24 @@ ${INSTALL_URL}
           </View>
         </View>
       </View>
+
+      {postcardS.length > 0 ? (
+        <GuardedTouch
+          enabled={!Boolean(storedIsLogin)}
+          onRequireLogin={() => {
+            Alert.alert("알림", "로그인이 필요합니다.");
+          }}
+        >
+          <PostcardSSlider posts={postcardS} />
+        </GuardedTouch>
+      ) : null}
     </View>
   ), [
     isNationwide,
     openReferralModalFromBanner,
+    postcardS,
     selectedProvinceShortsForQuickTable,
+    storedIsLogin,
     toggleQuickRegion,
     uiConfig,
     uiConfigLoaded,
@@ -1989,7 +2043,7 @@ ${INSTALL_URL}
               setCursor(undefined);
               setPageCursors(new Map());
               setRefreshing(true);
-              await load(1, true);
+              await Promise.all([load(1, true), loadSlidePosts()]);
               setRefreshing(false);
             }}
           />

@@ -6,7 +6,7 @@ import axios, {
   InternalAxiosRequestConfig
 } from "axios";
 import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 
 const extra: any =
   (Constants.expoConfig as any)?.extra ??
@@ -1022,6 +1022,7 @@ export const Posts = {
       cursor?: PostListCursor;
       status?: "published" | "closed";
       limit?: number;
+      card_type?: number;
       province?: string;
       city?: string;
       regions?: string; // 콤마로 구분된 복수 지역 코드
@@ -1032,6 +1033,7 @@ export const Posts = {
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
     params.limit = opts?.limit ?? 333; // 기본값 333
+    if (opts?.card_type != null) params.card_type = opts.card_type;
     if (opts?.province) params.province = opts.province;
     if (opts?.city) params.city = opts.city;
     if (opts?.regions) params.regions = opts.regions;
@@ -1052,6 +1054,7 @@ export const Posts = {
       cursor?: PostListCursor;
       status?: "published" | "closed";
       limit?: number;
+      card_type?: number;
       province?: string;
       city?: string;
       regions?: string; // 콤마로 구분된 복수 지역 코드
@@ -1063,6 +1066,7 @@ export const Posts = {
     if (opts?.cursor) params.cursor = opts.cursor;
     if (opts?.status) params.status = opts.status;
     params.limit = opts?.limit ?? 120; // 기본값 120
+    if (opts?.card_type != null) params.card_type = opts.card_type;
     if (opts?.province) params.province = opts.province;
     if (opts?.city) params.city = opts.city;
     if (opts?.regions) params.regions = opts.regions;

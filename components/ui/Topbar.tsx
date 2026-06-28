@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Notifications from "expo-notifications";
 import { router, usePathname } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Platform, Pressable, Text as RNText, ScrollView, StyleSheet, View } from "react-native";
@@ -8,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useModalBackHandler } from "../../hooks/useModalBackHandler";
 import { Notify } from "../../lib/api";
 import { getSession } from "../../utils/session";
+import { setBadgeCountSafe } from "../../utils/notifications";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -101,7 +101,7 @@ export default function TopBar() {
     const fetchBadge = async () => {
       try {
         const count = await Notify.getUnreadCount(username);
-        await Notifications.setBadgeCountAsync(count);
+        await setBadgeCountSafe(count);
       } catch (e) {
         console.warn("배지 업데이트 오류:", e);
       }
@@ -128,7 +128,7 @@ export default function TopBar() {
     await Notify.markNotificationRead(item.id);
 
     const count = await Notify.getUnreadCount(username);
-    await Notifications.setBadgeCountAsync(count);
+    await setBadgeCountSafe(count);
 
     if (item.data?.post_id) {
       router.push({
@@ -155,7 +155,7 @@ export default function TopBar() {
       await Notify.markAllNotificationsRead(list.map((v) => v.id));
       setList([]);
       setUnreadCount(0);
-      await Notifications.setBadgeCountAsync(0);
+      await setBadgeCountSafe(0);
     } catch (e) {
       console.warn("모두 확인 처리 실패:", e);
     } finally {
@@ -164,7 +164,7 @@ export default function TopBar() {
       try {
         const count = await Notify.getUnreadCount(username);
         setUnreadCount(count);
-        await Notifications.setBadgeCountAsync(count);
+        await setBadgeCountSafe(count);
         await loadNotifications();
       } catch {
         // ignore

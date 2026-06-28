@@ -1,6 +1,6 @@
 // app/index.tsx
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../../utils/secureStorage";
 import { useEffect } from "react";
 
 export default function Index() {

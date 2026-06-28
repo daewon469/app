@@ -2,7 +2,7 @@ import { Auth } from "@/lib/api";
 import { getSession } from "@/utils/session";
 import { Ionicons } from '@expo/vector-icons';
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../../utils/secureStorage";
 
 import React, { useState } from "react";
 import { Alert, Platform, Pressable, Text as RNText, View } from "react-native";

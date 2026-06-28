@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import type { Post } from "../lib/api";
 import { Posts } from "../lib/api";
+import { fixedFontWeight, listItemDateTextStyle, listItemTitleTextStyle } from "../utils/listTextStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -101,22 +102,13 @@ export default function CommunityList() {
           }}
         />
         <Text
-          style={{
-            fontSize: 15,
-            fontWeight: "400",
-            color: colors.text,
-            flex: 1,
-          }}
+          style={[listItemTitleTextStyle, { color: colors.text }]}
           numberOfLines={1}
         >
           {post.title}
         </Text>
         <Text
-          style={{
-            fontSize: 11,
-            color: colors.subText,
-            marginLeft: 8,
-          }}
+          style={[listItemDateTextStyle, { color: colors.subText }]}
           numberOfLines={1}
         >
           {formatPostDateTime((post as any)?.created_at)}
@@ -150,7 +142,7 @@ export default function CommunityList() {
           <Text
             style={{
               color: currentPage === page ? "#fff" : colors.text,
-              fontWeight: "600",
+              ...fixedFontWeight("600"),
             }}
           >
             {page}
@@ -180,7 +172,7 @@ export default function CommunityList() {
           }}
         >
           <Text
-            style={{ fontSize: 23, fontWeight: "bold", color: colors.text }}
+            style={{ fontSize: 23, color: colors.text, ...fixedFontWeight("700") }}
           >
             분<Text style={{ fontSize: 16 }}>양인</Text> 수
             <Text style={{ fontSize: 16 }}>다</Text>
@@ -195,7 +187,7 @@ export default function CommunityList() {
               backgroundColor: colors.primary,
             }}
           >
-            <Text style={{ fontSize: 13, color: "#fff", fontWeight: "600" }}>
+            <Text style={{ fontSize: 13, color: "#fff", ...fixedFontWeight("600") }}>
               글 작성
             </Text>
           </Pressable>

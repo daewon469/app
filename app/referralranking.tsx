@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, Alert, Animated, Text as RNText, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ScrollNavigator from "../components/ScrollNavigator";
+import ReferralBonusTable from "../components/ui/ReferralBonusTable";
 import { Referral, type ReferralRankingItem } from "../lib/api";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -29,6 +30,7 @@ export default function ReferralRankingScreen() {
       subText: "#666",
       border: "#000",
       divider: "rgba(0,0,0,0.12)",
+      borderSoft: "rgba(0,0,0,0.12)",
       primary: "#4A6CF7",
     }),
     [],
@@ -86,6 +88,42 @@ export default function ReferralRankingScreen() {
           추천인 랭킹
         </Text>
       </View>
+
+      <View
+        style={{
+          marginTop: 10,
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 14,
+          padding: 16,
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
+          ※ 추천인 포인트 보너스 지급
+        </Text>
+        <View style={{ height: 10 }} />
+        <ReferralBonusTable
+          colors={{
+            text: colors.text,
+            subText: colors.subText,
+            headerText: colors.primary,
+            borderSoft: colors.borderSoft,
+          }}
+        />
+      </View>
+
+      <Text
+        style={{
+          marginTop: 8,
+          textAlign: "center",
+          color: colors.text,
+          fontSize: 14,
+          fontWeight: "700",
+        }}
+      >
+        ※ 포인트는 유료전환 시 캐시처럼 사용됩니다.
+      </Text>
 
       <View style={{ marginTop: 10 }}>
         {loading ? (

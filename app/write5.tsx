@@ -1,7 +1,7 @@
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useEffect, useState } from "react";
 import {
     Image,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, Auth, Posts } from "../lib/api";
+import { inputFontWeightStyle } from "../utils/inputStyle";
 import { getSession } from "../utils/session";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -227,6 +228,7 @@ export default function NoticeWrite() {
               borderRadius: 8,
               marginBottom: 20,
               fontSize: 16,
+              ...inputFontWeightStyle(title),
             }}
           />
 
@@ -285,7 +287,7 @@ export default function NoticeWrite() {
             value={content}
             onChangeText={setContent}
             multiline
-            style={[inputStyle, { minHeight: 220, textAlignVertical: "top", fontSize: 15 }]}
+            style={[inputStyle, { minHeight: 220, textAlignVertical: "top", fontSize: 15 }, inputFontWeightStyle(content)]}
           />
 
           <View style={{ marginTop: 20 }}>

@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../../utils/secureStorage";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,

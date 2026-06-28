@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
 import RegionSelectModal from "../components/RegionSelectModal";
@@ -12,6 +12,7 @@ import {
   resolveSignupMessage,
   resolveUserUpdateMessage,
 } from "../lib/authErrors";
+import { inputFontWeightStyle } from "../utils/inputStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -329,7 +330,7 @@ export default function SignupScreen() {
             placeholderTextColor="#666"
             value={username}
             onChangeText={setUserName}
-            style={inputStyle}
+            style={[inputStyle, inputFontWeightStyle(username)]}
           />
         </View>
 
@@ -342,7 +343,7 @@ export default function SignupScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              style={{ flex: 1, padding: 12, color: colors.text }}
+              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(password) }}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -367,7 +368,7 @@ export default function SignupScreen() {
               value={password_confirm}
               onChangeText={setPassword_confirm}
               secureTextEntry={!showPasswordConfirm}
-              style={{ flex: 1, padding: 12, color: colors.text }}
+              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(password_confirm) }}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -390,7 +391,7 @@ export default function SignupScreen() {
             placeholderTextColor="#666"
             value={name}
             onChangeText={setName}
-            style={inputStyle}
+            style={[inputStyle, inputFontWeightStyle(name)]}
           />
         </View>
 
@@ -409,7 +410,7 @@ export default function SignupScreen() {
                 setPhoneSent(false);
                 setPhoneVerified(false);
               }}
-              style={{ flex: 1, padding: 12, color: colors.text }}
+              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(phoneNumber) }}
               keyboardType="phone-pad"
             />
             {canPhoneVerify && (
@@ -432,7 +433,7 @@ export default function SignupScreen() {
           </View>
         </View>
 
-        {canPhoneVerify && phoneSent && !phoneVerified && (
+        {canPhoneVerify && (
           <View>
             <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>※ 인증번호</Text>
             <View style={inputRowStyle}>
@@ -441,13 +442,13 @@ export default function SignupScreen() {
                 placeholderTextColor="#666"
                 value={phoneCode}
                 onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-                style={{ flex: 1, padding: 12, color: colors.text }}
+                style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(phoneCode) }}
                 keyboardType="number-pad"
                 maxLength={6}
               />
               <TouchableOpacity
                 onPress={verifyPhoneCode}
-                disabled={verifyingCode || !phoneCode.trim()}
+                disabled={verifyingCode || phoneVerified || !phoneCode.trim()}
                 style={{
                   paddingHorizontal: 12,
                   paddingVertical: 10,
@@ -456,7 +457,9 @@ export default function SignupScreen() {
                   opacity: verifyingCode ? 0.6 : 1,
                 }}
               >
-                <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
+                <Text style={{ color: phoneVerified ? "#2e7d32" : colors.primary, fontWeight: "bold" }}>
+                  {phoneVerified ? "완료" : "확인"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -470,7 +473,7 @@ export default function SignupScreen() {
               placeholder="지역 선택"
               placeholderTextColor="#666"
               editable={false}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(region)]}
               pointerEvents="none"
             />
           </Pressable>
@@ -484,7 +487,7 @@ export default function SignupScreen() {
               placeholderTextColor="#666"
               value={referralCode}
               onChangeText={setReferralCode}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(referralCode)]}
               autoCapitalize="none"
             />
           </View>
@@ -493,8 +496,9 @@ export default function SignupScreen() {
         <RegionSelectModal
           visible={regionModalOpen}
           onClose={() => setRegionModalOpen(false)}
-          onSelect={(province, city) => {
-            setRegion(city === "전체" ? province : `${province} ${city}`);
+          singleStep
+          onSelect={(province) => {
+            setRegion(province);
           }}
         />
 

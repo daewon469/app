@@ -2,7 +2,6 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Animated, Linking, Platform, Pressable, Text as RNText, Share, View } from "react-native";
@@ -12,6 +11,7 @@ import ScrollNavigator from "../components/ScrollNavigator";
 import ReferralModal from "../components/ui/ReferralModal";
 import UserGradeBadge from "../components/ui/UserGradeBadge";
 import { API_URL, Auth, Referral, type MyPageSummaryResponse } from "../lib/api";
+import * as SecureStore from "../utils/secureStorage";
 import { getUserGradeLabel } from "../utils/userGrade";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -376,7 +376,7 @@ ${INSTALL_URL}
                             />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                            <View style={{ flexDirection: "row", alignItems: "baseline", flexWrap: "wrap" }}>
                                 <Text
                                     style={{
                                         fontSize: 20,
@@ -386,29 +386,27 @@ ${INSTALL_URL}
                                 >
                                     {username}
                                 </Text>
-                            </View>
-                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-                                <Ionicons name="ribbon-outline" size={12} color={colors.subText} />
                                 <Text
                                     style={{
-                                        fontSize: 12,
+                                        fontSize: 13,
                                         color: colors.subText,
                                         marginLeft: 4,
                                     }}
                                 >
-                                    회원등급: {getUserGradeLabel(summary?.user_grade ?? -1)}
+                                    ({getUserGradeLabel(summary?.user_grade ?? -1)})
                                 </Text>
                             </View>
-                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-                                <Ionicons name="calendar-outline" size={12} color={colors.subText} />
+                            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                                <Ionicons name="star" size={14} color={colors.primary} />
                                 <Text
                                     style={{
-                                        fontSize: 12,
+                                        fontSize: 13,
                                         color: colors.subText,
+                                        fontWeight: "500",
                                         marginLeft: 4,
                                     }}
                                 >
-                                    가입일: {summary?.signup_date || "정보 없음"}
+                                    추천인코드 {referralCode}
                                 </Text>
                             </View>
                         </View>

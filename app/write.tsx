@@ -1,11 +1,11 @@
 import RegionSelectModal from "@/components/RegionSelectModal";
 import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text as RNText, TextInput as RNTextInput, SafeAreaView, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,6 +18,7 @@ import { API_URL, Posts, type StatusType } from "../lib/api";
 import { RootState } from "../store";
 import { setBusinessLocation, setWorkLocation } from "../store/LocationSlice";
 import { buildKakaoMapUrl } from "../utils/map";
+import { inputFontWeightStyle, PLACEHOLDER_FONT_WEIGHT } from "../utils/inputStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -152,6 +153,8 @@ export default function PostWrite() {
   const draftKeyRef = useRef<string>("draft:write");
   const draftLoadedRef = useRef(false);
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipBackConfirmRef = useRef(false);
+  const navigation = useNavigation();
 
   const [contractFee, setContractFee] = useState<string | undefined>(undefined);
   const [onetoking, setOneToking] = useState<string | undefined>(undefined);
@@ -1020,15 +1023,19 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
       }
       // 알림은 "등록/수정 성공" 이후에만 노출
       const onSuccessConfirm = () => {
+        skipBackConfirmRef.current = true;
         if (targetStatus === "closed") {
-          router.replace("/mypage");
+          router.replace("/list");
           return;
         }
         router.back();
       };
       if (id) {
-        const titleText = targetStatus === "closed" ? "임시 저장 완료" : "수정 완료";
-        const bodyText = targetStatus === "closed" ? "임시 저장(마감) 처리되었습니다." : "수정이 완료되었습니다.";
+        const titleText = targetStatus === "closed" ? "완료" : "수정 완료";
+        const bodyText =
+          targetStatus === "closed"
+            ? "마이메뉴->내 구인글에 임시저장(마감)되었습니다."
+            : "수정이 완료되었습니다.";
         Alert.alert(titleText, bodyText, [
           { text: "확인", onPress: onSuccessConfirm },
         ]);
@@ -1039,16 +1046,60 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         } catch {
           // ignore
         }
-        const titleText = targetStatus === "closed" ? "임시 저장 완료" : "등록 완료";
+        const titleText = targetStatus === "closed" ? "완료" : "등록 완료";
         const bodyText =
           targetStatus === "closed"
-            ? "임시 저장(마감)으로 등록되었습니다."
+            ? "마이메뉴->내 구인글에 임시저장(마감)되었습니다."
             : "신규등록이 완료되었습니다.";
         Alert.alert(titleText, bodyText, [
           { text: "확인", onPress: onSuccessConfirm },
         ]);
       }
     } catch (e: any) {
+      const errMsg = String(e?.message ?? "");
+      const errCode = String(e?.code ?? "");
+      const isTimeout =
+        errCode === "ECONNABORTED" || errMsg.toLowerCase().includes("timeout");
+      const isNetwork = errMsg.includes("Network Error");
+
+      // 서버에는 저장되었는데 클라이언트가 timeout/네트워크 문제로 실패로 인식하는 경우
+      if (isTimeout || isNetwork) {
+        if (!id) {
+          try {
+            await clearDraft();
+            await SecureStore.setItemAsync("lastPostCreateDate", getLocalDateKey());
+          } catch {
+            // ignore
+          }
+        }
+        skipBackConfirmRef.current = true;
+        const titleText =
+          targetStatus === "closed"
+            ? "완료"
+            : id
+              ? "수정 완료"
+              : "등록 완료";
+        const bodyText =
+          targetStatus === "closed"
+            ? "마이메뉴->내 구인글에 임시저장(마감)되었습니다."
+            : id
+              ? "수정이 완료되었을 수 있습니다. 목록에서 확인해주세요."
+              : "등록이 완료되었을 수 있습니다. 목록에서 확인해주세요.";
+        Alert.alert(titleText, bodyText, [
+          {
+            text: "확인",
+            onPress: () => {
+              if (targetStatus === "closed") {
+                router.replace("/list");
+                return;
+              }
+              router.back();
+            },
+          },
+        ]);
+        return;
+      }
+
       const msg =
         e?.response?.data?.detail ??
         e?.response?.data?.message ??
@@ -1099,6 +1150,36 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
   const openTempSaveSheet = async () => {
     await submitWithStatus("closed");
   };
+
+  const openTempSaveSheetRef = useRef(openTempSaveSheet);
+  openTempSaveSheetRef.current = openTempSaveSheet;
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+      if (skipBackConfirmRef.current) return;
+
+      e.preventDefault();
+
+      Alert.alert("확인", "임시저장을 하시겠습니까?", [
+        {
+          text: "아니오",
+          style: "cancel",
+          onPress: () => {
+            skipBackConfirmRef.current = true;
+            navigation.dispatch(e.data.action);
+          },
+        },
+        {
+          text: "예",
+          onPress: () => {
+            void openTempSaveSheetRef.current();
+          },
+        },
+      ]);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const onPickWork = ({ address, lat, lng }: LocationSel) => {
     setWorkplaceAddress(address);
@@ -1197,7 +1278,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               placeholderTextColor={placeholder}
               value={title}
               onChangeText={setTitle}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(title)]}
             />
           </View>
 
@@ -1238,7 +1319,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               value={onetoking}
               maxLength={31}
               onChangeText={setOneToking}
-              style={[inputStyle, { color: textColor }]}
+              style={[inputStyle, { color: textColor }, inputFontWeightStyle(onetoking)]}
             />
           </View>
 
@@ -1281,7 +1362,12 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               }}
               activeOpacity={0.8}
             >
-              <Text style={{ color: selectedIndustries.size > 0 ? colors.text : placeholder }}>
+              <Text
+                style={{
+                  color: selectedIndustries.size > 0 ? colors.text : placeholder,
+                  fontWeight: selectedIndustries.size > 0 ? undefined : PLACEHOLDER_FONT_WEIGHT,
+                }}
+              >
                 {selectedIndustries.size > 0
                   ? Array.from(selectedIndustries).join(", ")
                   : "업종을 선택하세요"}
@@ -1401,6 +1487,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                           paddingHorizontal: 12,
                           backgroundColor: "#fff",
                         },
+                        inputFontWeightStyle(otherIndustryName),
                       ]}
                     />
                     <Text style={{ fontSize: 12, color: colors.subText, marginTop: 6 }}>
@@ -1474,7 +1561,13 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               }}
               onPress={() => setRegionModalVisible(true)}
             >
-              <Text style={{ fontSize: 14, color: selectedRegion ? colors.text : placeholder }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: selectedRegion ? colors.text : placeholder,
+                  fontWeight: selectedRegion ? undefined : PLACEHOLDER_FONT_WEIGHT,
+                }}
+              >
                 {selectedRegion
                   ? formatRegionLabel(selectedRegion)
                   : "지역을 선택하세요"}
@@ -1535,7 +1628,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                       placeholderTextColor={placeholder}
                       value={otherRoleName}
                       onChangeText={setOtherRoleName}
-                      style={inputStyle}
+                      style={[inputStyle, inputFontWeightStyle(otherRoleName)]}
                     />
 
                     <Text style={[blueLabel, { marginBottom: 6, marginTop: 10 }]}>
@@ -1546,7 +1639,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                       placeholderTextColor={placeholder}
                       value={fees["기타"]}
                       onChangeText={(v) => setFees((prev) => ({ ...prev, 기타: v }))}
-                      style={inputStyle}
+                      style={[inputStyle, inputFontWeightStyle(fees["기타"])]}
                       keyboardType="default"
                       editable={otherRoleName.trim().length > 0}
                     />
@@ -1569,7 +1662,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                       placeholderTextColor={placeholder}
                       value={fees[role]}
                       onChangeText={(v) => onChangeFee(role, v)}
-                      style={inputStyle}
+                      style={[inputStyle, inputFontWeightStyle(fees[role])]}
                       keyboardType="default"
                     />
                   </View>
@@ -1585,7 +1678,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               placeholderTextColor={placeholder}
               value={companyDeveloper}
               onChangeText={setCompanyDeveloper}
-              style={[inputStyle]}
+              style={[inputStyle, inputFontWeightStyle(companyDeveloper)]}
             />
           </View>
 
@@ -1596,7 +1689,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               placeholderTextColor={placeholder}
               value={companyConstructor}
               onChangeText={setCompanyConstructor}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(companyConstructor)]}
             />
           </View>
 
@@ -1607,7 +1700,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               placeholderTextColor={placeholder}
               value={companyTrustee}
               onChangeText={setCompanyTrustee}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(companyTrustee)]}
             />
           </View>
 
@@ -1618,7 +1711,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               placeholderTextColor={placeholder}
               value={companyAgency}
               onChangeText={setCompanyAgency}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(companyAgency)]}
             />
           </View>
 
@@ -1679,7 +1772,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                     placeholderTextColor={placeholder}
                     value={fees2.일비}
                     onChangeText={onChangeDailyFee}
-                    style={inputStyle}
+                    style={[inputStyle, inputFontWeightStyle(fees2.일비)]}
                     keyboardType="default"
                   />
                 </View>
@@ -1722,7 +1815,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                   placeholderTextColor="#888"
                   value={House.숙소}
                   onChangeText={(text) => setHouse({ 숙소: text })} // ✅ 상태 업데이트
-                  style={inputStyle}
+                  style={[inputStyle, inputFontWeightStyle(House.숙소)]}
                   keyboardType="default"
                 />
               </View>
@@ -1739,7 +1832,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                         placeholderTextColor={placeholder}
                         value={extraSupport[role].item}
                         onChangeText={v => onChangeExtraItem(role, v)}
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(extraSupport[role].item)]}
                         keyboardType="default"
                       />
                       <TextInput
@@ -1747,7 +1840,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                         placeholderTextColor={placeholder}
                         value={extraSupport[role].amount}
                         onChangeText={v => onChangeExtraAmount(role, v)}
-                        style={inputStyle}
+                        style={[inputStyle, inputFontWeightStyle(extraSupport[role].amount)]}
                         keyboardType="default"
                       />
                     </View>
@@ -1768,6 +1861,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               style={[
                 inputStyle,
                 { minHeight: 200, textAlignVertical: "top" },
+                inputFontWeightStyle(content),
               ]}
             />
           </View>
@@ -1780,7 +1874,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               placeholderTextColor={placeholder}
               value={agencyMan}
               onChangeText={setAgencyMan}
-              style={inputStyle}
+              style={[inputStyle, inputFontWeightStyle(agencyMan)]}
             />
           </View>
 
@@ -1792,7 +1886,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               value={agencyCall}
               onChangeText={(v) => setAgencyCall(mobile(v))}
               keyboardType="phone-pad"
-              style={[inputStyle, { marginBottom: 10 }]}
+              style={[inputStyle, { marginBottom: 10 }, inputFontWeightStyle(agencyCall)]}
             />
           </View>
 

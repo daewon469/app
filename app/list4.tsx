@@ -24,7 +24,8 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
 );
 
 const { width } = Dimensions.get("window");
-const SIDE_PEEK = 10; // 좌/우로 보이는 정도
+const LIST_HORIZONTAL_PADDING = 10; // list.tsx FlatList paddingHorizontal과 동일
+const SIDE_PEEK = LIST_HORIZONTAL_PADDING; // 좌/우로 보이는 정도
 const PAGE_GAP = 12; // 페이지 간 간격
 const PAGE_WIDTH = width - SIDE_PEEK * 2;
 const SNAP_INTERVAL = PAGE_WIDTH + PAGE_GAP;
@@ -294,7 +295,7 @@ export default function AdScreen() {
             return (
               <View style={{ width: PAGE_WIDTH }}>
                 <Animated.ScrollView
-                  contentContainerStyle={{ paddingBottom: 24 }}
+                  contentContainerStyle={{ paddingBottom: 24, paddingTop: 3 }}
                   showsVerticalScrollIndicator={false}
                   ref={(r) => {
                     pageScrollRefs.current[index] = r;
@@ -456,7 +457,6 @@ const styles = StyleSheet.create({
 
   cardSlim: {
     marginTop: 14,
-    marginHorizontal: 6,
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#000",
@@ -477,7 +477,6 @@ const styles = StyleSheet.create({
 
   cardTitleOnly: {
     marginTop: 12,
-    marginHorizontal: 6,
     paddingVertical: 18,
     paddingHorizontal: 14,
     backgroundColor: "white",
@@ -562,7 +561,6 @@ const styles = StyleSheet.create({
   /* 카드 */
   card: {
     marginTop: 14,
-    marginHorizontal: 6,
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: "#000",

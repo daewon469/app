@@ -1,7 +1,7 @@
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import React, { useEffect, useState } from "react";
 import {
     Image,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_URL, Notify, Posts } from "../lib/api";
+import { inputFontWeightStyle } from "../utils/inputStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -199,6 +200,7 @@ export default function SimplePostCreate() {
                                 marginBottom: 20,
                                 fontSize: 16,
                             },
+                            inputFontWeightStyle(title),
                         ]}
                     />
 
@@ -276,6 +278,7 @@ export default function SimplePostCreate() {
                                 textAlignVertical: "top",
                                 fontSize: 15,
                             },
+                            inputFontWeightStyle(content),
                         ]}
                     />
 

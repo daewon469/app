@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import auth from "./authSlice";
 import location from "./LocationSlice";
 import preferences, {

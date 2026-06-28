@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import type { Post } from "../lib/api";
 import { Posts } from "../lib/api";
+import { fixedFontWeight, listItemDateTextStyle, listItemTitleTextStyle } from "../utils/listTextStyle";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -92,21 +93,13 @@ export default function NewBoard() {
           }}
         />
         <Text
-          style={{
-            fontSize: 15,
-            color: colors.text,
-            flex: 1,
-          }}
+          style={[listItemTitleTextStyle, { color: colors.text }]}
           numberOfLines={1}
         >
           {post.title}
         </Text>
         <Text
-          style={{
-            fontSize: 11,
-            color: colors.subText,
-            marginLeft: 8,
-          }}
+          style={[listItemDateTextStyle, { color: colors.subText }]}
           numberOfLines={1}
         >
           {formatPostDateTime((post as any)?.created_at)}
@@ -148,21 +141,13 @@ export default function NewBoard() {
           }}
         />
         <Text
-          style={{
-            fontSize: 15,
-            color: colors.text,
-            flex: 1,
-          }}
+          style={[listItemTitleTextStyle, { color: colors.text }]}
           numberOfLines={1}
         >
           {post.title}
         </Text>
         <Text
-          style={{
-            fontSize: 11,
-            color: colors.subText,
-            marginLeft: 8,
-          }}
+          style={[listItemDateTextStyle, { color: colors.subText }]}
           numberOfLines={1}
         >
           {formatPostDateTime((post as any)?.created_at)}
@@ -199,8 +184,8 @@ export default function NewBoard() {
             <Text
               style={{
                 fontSize: 23,
-                fontWeight: "bold",
                 color: colors.text,
+                ...fixedFontWeight("700"),
               }}
             >
               분양 뉴스
@@ -220,7 +205,7 @@ export default function NewBoard() {
                   fontSize: 16,
                   color: colors.primary,
                   marginRight: 2,
-                  fontWeight: "500",
+                  ...fixedFontWeight("500"),
                 }}
               >
                 더보기
@@ -257,8 +242,8 @@ export default function NewBoard() {
             <Text
               style={{
                 fontSize: 23,
-                fontWeight: "bold",
                 color: colors.text,
+                ...fixedFontWeight("700"),
               }}
             >
               분<Text style={{ fontSize: 16 }}>양인</Text> 수<Text style={{ fontSize: 16 }}>다</Text>
@@ -278,7 +263,7 @@ export default function NewBoard() {
                   fontSize: 16,
                   color: colors.primary,
                   marginRight: 2,
-                  fontWeight: "500",
+                  ...fixedFontWeight("500"),
                 }}
               >
                 더보기

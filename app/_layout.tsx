@@ -3,7 +3,7 @@ import Constants from "expo-constants";
 import { useFonts } from 'expo-font';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
-import * as SecureStore from "expo-secure-store";
+import * as SecureStore from "../utils/secureStorage";
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from "react";
 import { Alert, Platform, Text, TextInput, View } from "react-native";
@@ -17,6 +17,7 @@ import TopBar from "../components/ui/Topbar";
 import { AppMeta, Notify } from "../lib/api";
 import { store } from "../store";
 import { compareVersions } from "../utils/compareVersions";
+import { isPushNotificationsSupported, setBadgeCountSafe } from "../utils/notifications";
 
 function disableFontScalingGlobally() {
   // 기기 "글자 크기" 설정과 무관하게 앱 폰트 크기를 고정합니다.
@@ -31,15 +32,17 @@ function disableFontScalingGlobally() {
 
 disableFontScalingGlobally();
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (isPushNotificationsSupported) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export default function RootLayout() {
   const [forceUpdateVisible, setForceUpdateVisible] = useState(false);
@@ -54,8 +57,7 @@ export default function RootLayout() {
   const didCheckForceUpdateRef = useRef(false);
 
   useEffect(() => {
-    // 자동로그인(세션 복원): SecureStore -> redux(auth)
-    // 로그인 세션은 isLogin/username 기반으로만 유지합니다(토큰 기반 복원 X).
+    if (!isPushNotificationsSupported) return;
 
     (async () => {
       const lastResponse =
@@ -88,7 +90,7 @@ export default function RootLayout() {
       const username = await SecureStore.getItemAsync("username");
       if (username) {
         const count = await Notify.getUnreadCount(username);
-        await Notifications.setBadgeCountAsync(count);
+        await setBadgeCountSafe(count);
       }
     });
 
@@ -154,7 +156,7 @@ export default function RootLayout() {
         }
 
         const count = await Notify.getUnreadCount(username);
-        await Notifications.setBadgeCountAsync(count);
+        await setBadgeCountSafe(count);
       } catch {
         // 네트워크 실패 등은 무시(다음 실행 때 다시 시도)
       }
