@@ -55,30 +55,6 @@ function CardImage({ uri, style }: { uri: string | null; style?: object }) {
   );
 }
 
-/** 상단 텍스트 가독용 그라데이션 */
-function TopMeshScrim() {
-  return (
-    <LinearGradient
-      colors={["rgba(0,0,0,0.9)", "rgba(0,0,0,0.55)", "rgba(0,0,0,0)"]}
-      locations={[0, 0.5, 1]}
-      style={StyleSheet.absoluteFillObject}
-      pointerEvents="none"
-    />
-  );
-}
-
-/** 하단 텍스트 가독용 그라데이션 */
-function BottomMeshScrim() {
-  return (
-    <LinearGradient
-      colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.92)"]}
-      locations={[0, 0.5, 1]}
-      style={StyleSheet.absoluteFillObject}
-      pointerEvents="none"
-    />
-  );
-}
-
 type Props = {
   post: Post;
   showHeart?: boolean;
@@ -127,46 +103,47 @@ function PostCardS({ post, showHeart = true, height = LIST_CARD_HEIGHT_TYPE_S }:
             />
           ) : null}
 
-          <View
+          <LinearGradient
             pointerEvents="none"
+            colors={["rgba(0,0,0,0.9)", "rgba(0,0,0,0.55)", "rgba(0,0,0,0)"]}
+            locations={[0, 0.55, 1]}
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
-              bottom: 0,
               zIndex: 1,
+              paddingHorizontal: 8,
+              paddingTop: 4,
+              paddingBottom: 14,
             }}
           >
-            <TopMeshScrim />
-            <View style={{ paddingHorizontal: 8, paddingTop: 6, paddingBottom: 12 }}>
+            <Text
+              numberOfLines={2}
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                lineHeight: 22,
+                color: "#fff",
+              }}
+            >
+              {post.title}
+            </Text>
+            {post.highlight_content ? (
               <Text
-                numberOfLines={2}
+                numberOfLines={1}
                 style={{
-                  fontSize: 16,
+                  marginTop: 2,
+                  fontSize: 15,
                   fontWeight: "700",
-                  lineHeight: 22,
-                  color: "#fff",
+                  lineHeight: 20,
+                  color: resolveSlideHighlightColor(post.highlight_color),
                 }}
               >
-                {post.title}
+                {post.highlight_content}
               </Text>
-              {post.highlight_content ? (
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    marginTop: 2,
-                    fontSize: 15,
-                    fontWeight: "700",
-                    lineHeight: 20,
-                    color: resolveSlideHighlightColor(post.highlight_color),
-                  }}
-                >
-                  {post.highlight_content}
-                </Text>
-              ) : null}
-            </View>
-          </View>
+            ) : null}
+          </LinearGradient>
         </View>
 
         {/* 하단 — 2분할 이미지 + 업종/역할 텍스트 */}
@@ -178,52 +155,43 @@ function PostCardS({ post, showHeart = true, height = LIST_CARD_HEIGHT_TYPE_S }:
             <CardImage uri={bottomRight} />
           </View>
 
-          <View
+          <LinearGradient
             pointerEvents="none"
+            colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.6)", "rgba(0,0,0,0.92)"]}
+            locations={[0, 0.45, 1]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               bottom: 0,
-              top: 0,
               zIndex: 1,
+              paddingHorizontal: 8,
+              paddingTop: 16,
+              paddingBottom: 4,
             }}
           >
-            <BottomMeshScrim />
-            <View
+            <Text
+              numberOfLines={1}
               style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                bottom: 0,
-                paddingHorizontal: 8,
-                paddingTop: 12,
-                paddingBottom: 6,
+                fontSize: 15,
+                fontWeight: "700",
+                color: "#7eb8ff",
               }}
             >
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: 15,
-                  fontWeight: "700",
-                  color: "#7eb8ff",
-                }}
-              >
-                {industryProvinceCity}
-              </Text>
-              <Text
-                numberOfLines={1}
-                style={{
-                  marginTop: 2,
-                  fontSize: 15,
-                  fontWeight: "700",
-                  color: "#ffb4b4",
-                }}
-              >
-                {formatRoles(post)}
-              </Text>
-            </View>
-          </View>
+              {industryProvinceCity}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{
+                marginTop: 2,
+                fontSize: 15,
+                fontWeight: "700",
+                color: "#ffb4b4",
+              }}
+            >
+              {formatRoles(post)}
+            </Text>
+          </LinearGradient>
         </View>
       </Pressable>
     </Link>
