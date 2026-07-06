@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Text as RNText, View } from "react-native";
+import { REFERRAL_GRADE_BONUS_ROWS } from "../../utils/userGrade";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -86,17 +87,20 @@ export default function ReferralBonusTable({
   }, [bonusTableLayout, bonusTableWidth]);
 
   const bonusRows = useMemo<BonusRow[]>(
-    () =>
-      rows ?? [
-        { grade: "레전드", count: "100명", bonus: "1,000,000p" },
-        { grade: "마스터", count: "50명", bonus: "500,000p" },
-        { grade: "프로", count: "20명", bonus: "200,000p" },
-        { grade: "세미프로", count: "10명", bonus: "100,000p" },
-        { grade: "아마추어", count: "5명", bonus: "50,000p" },
-        { grade: "일반회원", count: "-", bonus: "-" },
-      ],
+    () => rows ?? [...REFERRAL_GRADE_BONUS_ROWS],
     [rows]
   );
+
+  const gradeColor = (grade: string) => {
+    if (grade === "레전드") return "#A67C00";
+    if (grade === "챌린저") return "#C2410C";
+    if (grade === "마스터") return "#36454F";
+    if (grade === "프로") return "#E11D48";
+    if (grade === "세미프로") return colors.headerText;
+    if (grade === "아마추어") return "#1B8A3A";
+    if (grade === "일반회원") return colors.subText;
+    return colors.text;
+  };
 
   return (
     <View
@@ -185,20 +189,7 @@ export default function ReferralBonusTable({
                 ellipsizeMode="tail"
                 style={{
                   width: bonusTableCols.gradeWidth,
-                  color:
-                    row.grade === "레전드"
-                      ? "#A67C00" // gold
-                      : row.grade === "마스터"
-                        ? "#36454F" // charcoal
-                        : row.grade === "프로"
-                          ? "#E11D48" // red
-                          : row.grade === "세미프로"
-                            ? colors.headerText // blue
-                            : row.grade === "아마추어"
-                              ? "#1B8A3A" // green
-                              : row.grade === "일반회원"
-                                ? colors.subText // gray
-                                : colors.text,
+                  color: gradeColor(row.grade),
                   fontSize: 14,
                   fontWeight: "700",
                   textAlign: "left",

@@ -1,4 +1,4 @@
-export type UserGrade = -1 | 0 | 1 | 2 | 3 | 4;
+export type UserGrade = -1 | 0 | 1 | 2 | 3 | 4 | 5;
 
 export const USER_GRADE_LABEL: Record<UserGrade, string> = {
   "-1": "일반회원",
@@ -6,13 +6,14 @@ export const USER_GRADE_LABEL: Record<UserGrade, string> = {
   1: "세미프로",
   2: "프로",
   3: "마스터",
-  4: "레전드",
+  4: "챌린저",
+  5: "레전드",
 };
 
 export function normalizeUserGrade(value: unknown): UserGrade | null {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return null;
-  if (n === -1 || n === 0 || n === 1 || n === 2 || n === 3 || n === 4) return n;
+  if (n === -1 || n === 0 || n === 1 || n === 2 || n === 3 || n === 4 || n === 5) return n;
   return null;
 }
 
@@ -27,13 +28,9 @@ export type UserGradeIconMeta =
       name: string;
       color: string;
       size: number;
-      // 뱃지 배경색(필요 시)
       badgeBgColor?: string;
-      // 아이콘이 원 안에서 차지하는 비율(기본 0.68)
       iconScale?: number;
-      // 뱃지 안에서 미세 보정(필요 시)
       offsetY?: number;
-      // 아이콘 자체의 검은 아웃라인(겹치기) 제거
       noOutline?: boolean;
     }
   | {
@@ -49,10 +46,11 @@ export type UserGradeIconMeta =
 
 export function getUserGradeIconMeta(value: unknown): UserGradeIconMeta {
   const g = normalizeUserGrade(value) ?? -1;
-  // PointEventModal에 맞춘 아이콘/색상
   switch (g) {
-    case 4:
+    case 5:
       return { type: "ion", name: "trophy", color: "#FFD600", size: 18 };
+    case 4:
+      return { type: "ion", name: "ribbon", color: "#FF6D00", size: 18 };
     case 3:
       return { type: "text", text: "♠", color: "#111", fontSize: 16, offsetY: 0 };
     case 2:
@@ -60,7 +58,6 @@ export function getUserGradeIconMeta(value: unknown): UserGradeIconMeta {
     case 1:
       return { type: "ion", name: "diamond", color: "#50B6FF", size: 18 };
     case -1:
-      // 내정보(사람) 아이콘: 파란 배경 + 흰색 아이콘(원에 가득 차게)
       return {
         type: "ion",
         name: "person",
@@ -72,8 +69,16 @@ export function getUserGradeIconMeta(value: unknown): UserGradeIconMeta {
       };
     case 0:
     default:
-      // 클로버 느낌 대체: leaf(잎사귀)
       return { type: "ion", name: "leaf", color: "#00B200", size: 18, noOutline: true };
   }
 }
 
+export const REFERRAL_GRADE_BONUS_ROWS = [
+  { grade: "레전드", count: "500명", bonus: "5,000,000p" },
+  { grade: "챌린저", count: "100명", bonus: "1,000,000p" },
+  { grade: "마스터", count: "50명", bonus: "500,000p" },
+  { grade: "프로", count: "20명", bonus: "200,000p" },
+  { grade: "세미프로", count: "10명", bonus: "100,000p" },
+  { grade: "아마추어", count: "5명", bonus: "50,000p" },
+  { grade: "일반회원", count: "-", bonus: "-" },
+] as const;

@@ -17,7 +17,6 @@ import CustomRegionMultiSelectModal, { type RegionObj } from "../components/Cust
 import MapMaker from "../components/MapMaker";
 import ScrollNavigator from "../components/ScrollNavigator";
 import BottomBar from "../components/ui/BottomBar";
-import NewsPreviewSection from "../components/ui/newspreview";
 import PostCard from "../components/ui/postcard";
 import PostCard2 from "../components/ui/postcard2";
 import PostCard3 from "../components/ui/postcard3";
@@ -41,6 +40,7 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
 // - 기본은 333개로 시작
 // - 맞춤필터 활성 시에도 동일한 333개 기준으로 로드
 const PAGE_SIZE = 333;
+const LIST_HORIZONTAL_PADDING = 10;
 const FILTER_PAGE_SIZE = 333;
 const MAP_PAGE_SIZE = 500;
 const MAP_CHUNK_SIZE = 100;
@@ -530,10 +530,11 @@ export default function Postlist() {
   // - dwell(머무는 시간): 한 줄이 화면에 "서있는" 시간
   // JS 타이머(setInterval/setTimeout)는 간헐적으로 타이밍이 어긋나
   // 빈 프레임처럼 보일 수 있어, 네이티브 드라이버 루프(Animated.loop)로 운용합니다.
-  const TICKER_TRANSITION_MS = 3500;
+  const TICKER_TRANSITION_MS = 600;
   const TICKER_DWELL_MS = 4500;
   const tickerY = useRef(new Animated.Value(0)).current;
-  const tickerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const tickerIndexRef = useRef(0);
+  const tickerAnimatingRef = useRef(false);
   const tickerLines = useMemo(
     () => [
       "포인트는 유료전환 시 캐시처럼 사용됩니다.",
@@ -541,50 +542,9 @@ export default function Postlist() {
     ],
     []
   );
-  // 티커는 "두 문장만" 교대로 노출(빈 줄 방지)
-  const tickerA = tickerLines[0] ?? "";
-  const tickerB = tickerLines[1] ?? tickerLines[0] ?? "";
-
-  const buildTickerLoop = useCallback(() => {
-    // 두 문장 교대:
-    // - 0(A) -> -H(B) -> -2H(A복제) 로 "계속 위로" 올린 뒤
-    // - 화면에 보이는 문장이 A일 때(복제 A), 0으로 순간 리셋하면 시각적으로 튀지 않습니다.
-    if (tickerLines.length <= 1) return null;
-
-    const steps: Animated.CompositeAnimation[] = [
-      // 시작 상태 보정
-      Animated.timing(tickerY, {
-        toValue: 0,
-        duration: 0,
-        useNativeDriver: true,
-      }),
-      // A 머무른 뒤 B로 올라감
-      Animated.timing(tickerY, {
-        toValue: -TICKER_HEIGHT,
-        duration: TICKER_TRANSITION_MS,
-        delay: TICKER_DWELL_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      // B 머무른 뒤 A(복제)로 한 번 더 위로 올라감
-      Animated.timing(tickerY, {
-        toValue: -TICKER_HEIGHT * 2,
-        duration: TICKER_TRANSITION_MS,
-        delay: TICKER_DWELL_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      // A(복제)가 보이는 상태에서 0으로 순간 리셋(내용 동일이라 튀지 않음)
-      Animated.timing(tickerY, {
-        toValue: 0,
-        duration: 0,
-        delay: TICKER_DWELL_MS,
-        useNativeDriver: true,
-      }),
-    ];
-
-    return Animated.loop(Animated.sequence(steps));
-  }, [tickerLines.length, tickerY, TICKER_HEIGHT, TICKER_TRANSITION_MS, TICKER_DWELL_MS]);
+  const [tickerIndex, setTickerIndex] = useState(0);
+  const tickerCurrent = tickerLines[tickerIndex % tickerLines.length] ?? "";
+  const tickerNext = tickerLines[(tickerIndex + 1) % tickerLines.length] ?? tickerCurrent;
   useFocusEffect(
     useCallback(() => {
       // 로그인 상태는 isLogin 기준으로만 유지 (토큰/Redux 기반 판정 X)
@@ -1518,21 +1478,46 @@ ${INSTALL_URL}
     if (!isNationwide) return;
     // 맞춤보기 활성화 시에는 전국검색 티커를 숨기므로, 애니메이션도 돌리지 않음
     if (isCustomViewActive) return;
-
-    // 진입/변경 시 위치 리셋
-    tickerY.setValue(0);
-
     if (tickerLines.length <= 1) return;
-    tickerLoopRef.current?.stop();
-    tickerLoopRef.current = buildTickerLoop();
-    tickerLoopRef.current?.start();
+
+    tickerY.setValue(0);
+    tickerIndexRef.current = 0;
+    setTickerIndex(0);
+
+    let dwellTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const runStep = () => {
+      if (cancelled) return;
+      dwellTimer = setTimeout(() => {
+        if (cancelled || tickerAnimatingRef.current) return;
+        tickerAnimatingRef.current = true;
+        Animated.timing(tickerY, {
+          toValue: -TICKER_HEIGHT,
+          duration: TICKER_TRANSITION_MS,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          tickerAnimatingRef.current = false;
+          if (!finished || cancelled) return;
+          tickerY.setValue(0);
+          const nextIndex = (tickerIndexRef.current + 1) % tickerLines.length;
+          tickerIndexRef.current = nextIndex;
+          setTickerIndex(nextIndex);
+          runStep();
+        });
+      }, TICKER_DWELL_MS);
+    };
+
+    runStep();
 
     return () => {
-      tickerLoopRef.current?.stop();
-      tickerLoopRef.current = null;
+      cancelled = true;
+      if (dwellTimer) clearTimeout(dwellTimer);
       tickerY.stopAnimation();
+      tickerAnimatingRef.current = false;
     };
-  }, [isNationwide, isCustomViewActive, buildTickerLoop, tickerLines.length, tickerY]);
+  }, [isNationwide, isCustomViewActive, tickerLines.length, tickerY, TICKER_HEIGHT, TICKER_TRANSITION_MS, TICKER_DWELL_MS]);
 
   const getMetrics = useCallback(() => ({
     contentHeight,
@@ -1566,11 +1551,12 @@ ${INSTALL_URL}
       const bannerWidthPxRaw = Number((item as any)?.width_px ?? NaN);
       const hasWidthPx = Number.isFinite(bannerWidthPxRaw) && bannerWidthPxRaw > 0;
       const bannerWidthPx = hasWidthPx
-        ? Math.max(120, Math.min(windowWidth - 24, bannerWidthPxRaw))
+        ? Math.max(120, Math.min(windowWidth - LIST_HORIZONTAL_PADDING * 2, bannerWidthPxRaw))
         : null;
 
       const bannerWidthPercent = Math.max(40, Math.min(100, Number(item?.width_percent ?? 100) || 100));
       return (
+      <View style={{ paddingHorizontal: LIST_HORIZONTAL_PADDING }}>
         <Pressable
           onPress={async () => {
             if (isReferral) {
@@ -1608,6 +1594,7 @@ ${INSTALL_URL}
             contentFit={bannerResizeMode === "stretch" ? "fill" : bannerResizeMode}
           />
         </Pressable>
+      </View>
       );
     }
 
@@ -1619,7 +1606,7 @@ ${INSTALL_URL}
       String((post as any).id) === String(firstType3PostId);
 
     return (
-      <View>
+      <View style={{ paddingHorizontal: LIST_HORIZONTAL_PADDING }}>
         {shouldShowType3Separator ? (
           <View
             style={{
@@ -1666,6 +1653,18 @@ ${INSTALL_URL}
 
   const listHeaderComponent = useMemo(() => (
     <View>
+      {postcardS.length > 0 ? (
+        <GuardedTouch
+          enabled={!Boolean(storedIsLogin)}
+          onRequireLogin={() => {
+            Alert.alert("알림", "로그인이 필요합니다.");
+          }}
+        >
+          <PostcardSSlider posts={postcardS} autoPlayMs={2000} fullWidth />
+        </GuardedTouch>
+      ) : null}
+
+      <View style={{ paddingHorizontal: LIST_HORIZONTAL_PADDING }}>
       {(() => {
         if (!uiConfigLoaded) return null;
         const tb: any = (uiConfig as any)?.top_banner ?? null;
@@ -1694,7 +1693,7 @@ ${INSTALL_URL}
           const wpxRaw = Number(it?.width_px);
           const hasWidthPx = Number.isFinite(wpxRaw) && wpxRaw > 0;
           // 화면을 넘어가는 px 고정 너비는 "고정처럼" 보이므로, 현재 화면 폭에 맞춰 상한을 둡니다.
-          const widthPx = hasWidthPx ? Math.max(120, Math.min(windowWidth - 24, Math.floor(wpxRaw))) : null;
+          const widthPx = hasWidthPx ? Math.max(120, Math.min(windowWidth - LIST_HORIZONTAL_PADDING * 2, Math.floor(wpxRaw))) : null;
           const wpRaw = Number(it?.width_percent);
           const widthPercent =
             Number.isFinite(wpRaw) && wpRaw > 0 ? Math.max(40, Math.min(100, Math.floor(wpRaw))) : 100;
@@ -1756,9 +1755,7 @@ ${INSTALL_URL}
         );
       })()}
 
-      <NewsPreviewSection />
-
-      {/* 분양 뉴스 카드 아래: 지역패널(항상 노출) */}
+      {/* 지역패널(항상 노출) */}
       <View style={{ paddingTop: 6, paddingBottom: 0 }}>
         <View
           style={{
@@ -1837,17 +1834,7 @@ ${INSTALL_URL}
           </View>
         </View>
       </View>
-
-      {postcardS.length > 0 ? (
-        <GuardedTouch
-          enabled={!Boolean(storedIsLogin)}
-          onRequireLogin={() => {
-            Alert.alert("알림", "로그인이 필요합니다.");
-          }}
-        >
-          <PostcardSSlider posts={postcardS} />
-        </GuardedTouch>
-      ) : null}
+      </View>
     </View>
   ), [
     isNationwide,
@@ -1945,38 +1932,25 @@ ${INSTALL_URL}
                 transform: [{ translateY: tickerY }],
               }}
             >
-              <View>
-                <View style={{ height: TICKER_HEIGHT, justifyContent: "center" }}>
-                  <Text
-                    allowFontScaling={false}
-                    style={BLUE_STRIP_TICKER_TEXT_STYLE}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    ※ {tickerA}
-                  </Text>
-                </View>
-                <View style={{ height: TICKER_HEIGHT, justifyContent: "center" }}>
-                  <Text
-                    allowFontScaling={false}
-                    style={BLUE_STRIP_TICKER_TEXT_STYLE}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    ※ {tickerB}
-                  </Text>
-                </View>
-                {/* A를 한 번 더 복제해서 (B -> A) 전환도 위로 올라가며 자연스럽게 보이도록 함 */}
-                <View style={{ height: TICKER_HEIGHT, justifyContent: "center" }}>
-                  <Text
-                    allowFontScaling={false}
-                    style={BLUE_STRIP_TICKER_TEXT_STYLE}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    ※ {tickerA}
-                  </Text>
-                </View>
+              <View style={{ height: TICKER_HEIGHT, justifyContent: "center" }}>
+                <Text
+                  allowFontScaling={false}
+                  style={BLUE_STRIP_TICKER_TEXT_STYLE}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  ※ {tickerCurrent}
+                </Text>
+              </View>
+              <View style={{ height: TICKER_HEIGHT, justifyContent: "center" }}>
+                <Text
+                  allowFontScaling={false}
+                  style={BLUE_STRIP_TICKER_TEXT_STYLE}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  ※ {tickerNext}
+                </Text>
               </View>
             </Animated.View>
           </View>
@@ -2009,7 +1983,7 @@ ${INSTALL_URL}
           setLayoutHeight(Math.floor(e.nativeEvent.layout.height));
         }}
         showsVerticalScrollIndicator={false}
-        style={{ flex: 1, backgroundColor: "#fff", paddingHorizontal: 10, paddingTop: 3 }}
+        style={{ flex: 1, backgroundColor: "#fff", paddingTop: 3 }}
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + 2 }}
         data={listFeedItems}
         ref={listRef}
@@ -2948,7 +2922,7 @@ function GuardedTouch({
   onRequireLogin?: () => void;
 }) {
   return (
-    <View style={{ position: "relative" }}>
+    <View style={{ position: "relative", overflow: "visible" }}>
       <View pointerEvents={enabled ? "none" : "auto"}>
         {children}
       </View>

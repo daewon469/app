@@ -48,7 +48,8 @@ const displayReason = (reason: string) => {
     if (g === 1) return "등업 달성(세미프로)";
     if (g === 2) return "등업 달성(프로)";
     if (g === 3) return "등업 달성(마스터)";
-    if (g === 4) return "등업 달성(레전드)";
+    if (g === 4) return "등업 달성(챌린저)";
+    if (g === 5) return "등업 달성(레전드)";
     return "등업 달성";
   }
   return reason;

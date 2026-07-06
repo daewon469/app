@@ -11,10 +11,8 @@ export const SIGNUP_STATUS_MESSAGES: Record<number, string> = {
   4: "전화번호를 입력해 주세요!",
   5: "거주지역을 입력해 주세요!",
   6: "추천인코드가 올바르지 않습니다!",
-  7: "추천인코드는 1회만 적용할 수 있습니다.",
   8: "추천인 처리 중 DB 오류가 발생했습니다.",
   9: "휴대폰 인증이 필요합니다.",
-  10: "이미 등록된 휴대폰 번호가 있습니다.",
 };
 
 export const USER_UPDATE_STATUS_MESSAGES: Record<number, string> = {
@@ -29,6 +27,19 @@ export const PHONE_VERIFY_STATUS_MESSAGES: Record<number, string> = {
   4: "인증번호가 올바르지 않습니다.",
 };
 
+export const FIND_USERNAME_STATUS_MESSAGES: Record<number, string> = {
+  1: "해당 번호로 가입된 아이디가 없습니다.",
+  2: "휴대폰 인증이 필요합니다.",
+  3: "인증번호가 만료되었습니다. 다시 발송해주세요.",
+};
+
+export const RESET_PASSWORD_STATUS_MESSAGES: Record<number, string> = {
+  1: "아이디(닉네임)를 찾을 수 없습니다.",
+  2: "비밀번호가 일치하지 않습니다.",
+  3: "등록된 휴대폰 번호와 일치하지 않습니다.",
+  9: "휴대폰 인증이 필요합니다.",
+};
+
 export function resolveSignupMessage(status: number, detail?: string | null): string {
   if (detail?.trim()) return detail.trim();
   return SIGNUP_STATUS_MESSAGES[status] ?? "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.";
@@ -41,6 +52,16 @@ export function resolveUserUpdateMessage(status: number, detail?: string | null)
 
 export function resolvePhoneVerifyMessage(status: number): string | null {
   return PHONE_VERIFY_STATUS_MESSAGES[status] ?? null;
+}
+
+export function resolveFindUsernameMessage(status: number, detail?: string | null): string {
+  if (detail?.trim()) return detail.trim();
+  return FIND_USERNAME_STATUS_MESSAGES[status] ?? "아이디 찾기에 실패했습니다. 다시 시도해주세요.";
+}
+
+export function resolveResetPasswordMessage(status: number, detail?: string | null): string {
+  if (detail?.trim()) return detail.trim();
+  return RESET_PASSWORD_STATUS_MESSAGES[status] ?? "비밀번호 재설정에 실패했습니다. 입력 정보를 확인해주세요.";
 }
 
 function extractDetail(data: unknown): string | null {

@@ -3,9 +3,19 @@ import { getApiErrorMessage, LOGIN_FAIL_MESSAGE } from "@/lib/authErrors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { Link, router } from "expo-router";
-import * as SecureStore from '../utils/secureStorage';
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import * as SecureStore from "../utils/secureStorage";
+import React, { useCallback, useRef, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text as RNText,
+  TextInput as RNTextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { isPushNotificationsSupported } from "../utils/notifications";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -20,7 +30,9 @@ export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
+
   const colors = {
     background: "#fff",
     card: "#f9f9f9",
@@ -29,27 +41,33 @@ export default function LoginScreen() {
     primary: "#4A6CF7",
     link: "blue",
   };
-  useEffect(() => {
-    if (!isPushNotificationsSupported) return;
 
-    async function initPush() {
-      const ptoken = await getPushToken();
-      setPushToken(ptoken);
-    }
-    initPush();
-  }, []);
   const submit = useCallback(async () => {
+    if (submittingRef.current || loading) return;
+    if (!username.trim()) {
+      Alert.alert("알림", "닉네임을 입력해 주세요.");
+      return;
+    }
+    if (!password) {
+      Alert.alert("알림", "비밀번호를 입력해 주세요.");
+      return;
+    }
+
+    submittingRef.current = true;
     try {
-      const res = await Auth.logIn(username, password, pushToken ?? undefined);
+      setLoading(true);
+      const pushToken = await getPushTokenSilent();
+      const res = await Auth.logIn(username.trim(), password, pushToken ?? undefined);
 
       if (res.status === 0 && res.token) {
-        Alert.alert("알림", "로그인 성공!");
         await Promise.all([
-          SecureStore.setItemAsync('isLogin', 'true'),
-          SecureStore.setItemAsync('username', username),
-          SecureStore.setItemAsync('token', res.token),
+          SecureStore.setItemAsync("isLogin", "true"),
+          SecureStore.setItemAsync("username", username.trim()),
+          SecureStore.setItemAsync("token", res.token),
         ]);
-        router.replace("/list");
+        Alert.alert("알림", "로그인 성공!", [
+          { text: "확인", onPress: () => router.replace("/list") },
+        ]);
         return;
       }
 
@@ -59,110 +77,127 @@ export default function LoginScreen() {
       );
     } catch (e: unknown) {
       Alert.alert("로그인 실패", getApiErrorMessage(e, LOGIN_FAIL_MESSAGE));
+    } finally {
+      submittingRef.current = false;
+      setLoading(false);
     }
-  }, [username, password, pushToken, router]);
+  }, [username, password, loading]);
 
   return (
-    <View style={{ padding: 20, gap: 16, backgroundColor: colors.background, flex: 1 }}>
-      <View>
-        <Text style={{ paddingStart: 6, fontSize: 15, marginBottom: 10, color: colors.text }}>※ 닉네임</Text>
-        <TextInput
-          placeholder="닉네임을 입력해 주세요."
-          placeholderTextColor="#888"
-          autoCapitalize="none"
-          value={username}
-          onChangeText={setUsername}
-          style={{
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 12,
-            padding: 12,
-            backgroundColor: colors.card,
-            color: colors.text,
-          }}
-        />
-      </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.select({ ios: "padding", android: "height" }) as "padding" | "height"}
+      keyboardVerticalOffset={100}
+    >
+      <ScrollView
+        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View>
+          <Text style={{ paddingStart: 6, fontSize: 15, marginBottom: 10, color: colors.text }}>※ 닉네임</Text>
+          <TextInput
+            placeholder="닉네임을 입력해 주세요."
+            placeholderTextColor="#888"
+            autoCapitalize="none"
+            value={username}
+            onChangeText={setUsername}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              padding: 12,
+              backgroundColor: colors.card,
+              color: colors.text,
+            }}
+          />
+        </View>
 
-      <View style={{ marginBottom: 10 }}>
-        <Text style={{ paddingStart: 6, fontSize: 15, marginBottom: 10, color: colors.text }}>※ 비밀번호</Text>
-        <View
+        <View style={{ marginBottom: 10 }}>
+          <Text style={{ paddingStart: 6, fontSize: 15, marginBottom: 10, color: colors.text }}>※ 비밀번호</Text>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              backgroundColor: colors.card,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <TextInput
+              placeholder="비밀번호를 입력해 주세요."
+              placeholderTextColor="#888"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              style={{ flex: 1, padding: 12, color: colors.text }}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? "비밀번호 숨기기" : "비밀번호 표시"}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#111" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={submit}
+          disabled={loading}
           style={{
-            borderWidth: 1,
-            borderColor: colors.border,
-            borderRadius: 12,
-            backgroundColor: colors.card,
-            flexDirection: "row",
+            backgroundColor: colors.primary,
+            borderRadius: 16,
+            paddingVertical: 12,
             alignItems: "center",
+            justifyContent: "center",
+            opacity: loading ? 0.6 : 1,
           }}
         >
-          <TextInput
-            placeholder="비밀번호를 입력해 주세요."
-            placeholderTextColor="#888"
-            secureTextEntry={!showPassword}
-            value={password}
-            onChangeText={setPassword}
-            style={{ flex: 1, padding: 12, color: colors.text }}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword((v) => !v)}
-            accessibilityRole="button"
-            accessibilityLabel={showPassword ? "비밀번호 숨기기" : "비밀번호 표시"}
-            style={{ paddingHorizontal: 12, paddingVertical: 10 }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#111" />
-          </TouchableOpacity>
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>로그인</Text>
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6 }}>
+          <Link href="/signup" asChild>
+            <Pressable>
+              <Text style={{ color: colors.link, paddingVertical: 6 }}>
+                회원가입
+              </Text>
+            </Pressable>
+          </Link>
+          <Text style={{ color: colors.text, opacity: 0.6 }}>|</Text>
+          <Link href="/findid" asChild>
+            <Pressable>
+              <Text style={{ color: colors.link, paddingVertical: 6 }}>아이디 찾기</Text>
+            </Pressable>
+          </Link>
+          <Text style={{ color: colors.text, opacity: 0.6 }}>|</Text>
+          <Link href="/resetpassword" asChild>
+            <Pressable>
+              <Text style={{ color: colors.link, paddingVertical: 6 }}>비밀번호 찾기</Text>
+            </Pressable>
+          </Link>
         </View>
-      </View>
-
-      <TouchableOpacity
-        onPress={submit}
-        style={{
-          backgroundColor: colors.primary,
-          borderRadius: 16,
-          paddingVertical: 12,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>로그인</Text>
-      </TouchableOpacity>
-
-      <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6 }}>
-        <Link href="/signup" asChild>
-          <Pressable>
-            <Text style={{ color: colors.link, paddingVertical: 6 }}>
-              회원가입
-            </Text>
-          </Pressable>
-        </Link>
-        <Text style={{ color: colors.text, opacity: 0.6 }}>|</Text>
-        <Link href="/findid" asChild>
-          <Pressable>
-            <Text style={{ color: colors.link, paddingVertical: 6 }}>아이디 찾기</Text>
-          </Pressable>
-        </Link>
-        <Text style={{ color: colors.text, opacity: 0.6 }}>|</Text>
-        <Link href="/resetpassword" asChild>
-          <Pressable>
-            <Text style={{ color: colors.link, paddingVertical: 6 }}>비밀번호 찾기</Text>
-          </Pressable>
-        </Link>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-async function getPushToken() {
+
+/** 푸시 권한이 없어도 null만 반환 — 로그인을 막지 않음 */
+async function getPushTokenSilent(): Promise<string | null> {
   if (!isPushNotificationsSupported) return null;
 
   try {
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("알림 권한 거부됨", "푸시 알림을 받기 위해 권한을 허용해주세요.");
-      return null;
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status === "undetermined") {
+      ({ status } = await Notifications.requestPermissionsAsync());
     }
+    if (status !== "granted") return null;
 
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
@@ -172,12 +207,8 @@ async function getPushToken() {
     }
 
     const tokenData = await Notifications.getExpoPushTokenAsync();
-    const token = tokenData.data;
-
-    console.log("### EXPO PUSH TOKEN:", token);
-
-    return token;
-  } catch (err) {
+    return tokenData.data;
+  } catch {
     return null;
   }
 }

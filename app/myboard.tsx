@@ -5,12 +5,14 @@ import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Animated, Linking, Platform, Pressable, Text as RNText, Share, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import ScrollNavigator from "../components/ScrollNavigator";
 import ReferralModal from "../components/ui/ReferralModal";
+import NewsPreviewSection from "../components/ui/newspreview";
 import UserGradeBadge from "../components/ui/UserGradeBadge";
-import { API_URL, Auth, Referral, type MyPageSummaryResponse } from "../lib/api";
+import { API_URL, Auth, Notify, Referral, type MyPageSummaryResponse } from "../lib/api";
 import * as SecureStore from "../utils/secureStorage";
 import { getUserGradeLabel } from "../utils/userGrade";
 
@@ -50,6 +52,7 @@ export default function MyPagePreview() {
     const [referralModalVisible, setReferralModalVisible] = useState(false);
     const referralCount = summary?.referral_count ?? 0;
     const [referralNetworkCount, setReferralNetworkCount] = useState(0);
+    const [unreadNotiCount, setUnreadNotiCount] = useState(0);
 
     const scrollRef = useRef<any>(null);
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -142,6 +145,23 @@ export default function MyPagePreview() {
             }
         })();
     }, []);
+
+    const loadUnreadNotiCount = useCallback(async (user: string) => {
+        try {
+            const count = await Notify.getUnreadCount(user);
+            setUnreadNotiCount(count);
+        } catch (e) {
+            console.warn("myboard: unread count error", e);
+        }
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            if (username) {
+                loadUnreadNotiCount(username);
+            }
+        }, [username, loadUnreadNotiCount])
+    );
 
     const handleLogout = () => {
         Alert.alert("로그아웃", "정말 로그아웃할까요?", [
@@ -507,6 +527,10 @@ ${INSTALL_URL}
                             </View>
                         </Pressable>
                     </View>
+                </View>
+
+                <View style={{ marginTop: 10 }}>
+                    <NewsPreviewSection />
                 </View>
 
                 {/* 추가로 분리된 "추천/내 정보 관리" 섹션 */}
@@ -942,12 +966,35 @@ ${INSTALL_URL}
                             router.push("/noti");
                         }}
                     >
-                        <Ionicons
-                            name="list-outline"
-                            size={20}
-                            color={colors.primary}
-                            style={{ marginRight: 10 }}
-                        />
+                        <View style={{ position: "relative", marginRight: 10 }}>
+                            <Ionicons
+                                name="list-outline"
+                                size={20}
+                                color={colors.primary}
+                            />
+                            {unreadNotiCount > 0 && (
+                                <View
+                                    style={{
+                                        position: "absolute",
+                                        top: -6,
+                                        right: -10,
+                                        minWidth: 18,
+                                        height: 18,
+                                        borderRadius: 9,
+                                        backgroundColor: "red",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        paddingHorizontal: 4,
+                                        borderWidth: 2,
+                                        borderColor: colors.card,
+                                    }}
+                                >
+                                    <Text style={{ color: "white", fontSize: 10, fontWeight: "bold" }}>
+                                        {unreadNotiCount}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
                         <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 내 알림 내역

@@ -1,7 +1,18 @@
 import { Auth } from "@/lib/api";
+import { getApiErrorMessage, resolvePhoneVerifyMessage, resolveResetPasswordMessage } from "@/lib/authErrors";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState, type ComponentProps } from "react";
-import { Alert, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { useRef, useState, type ComponentProps } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text as RNText,
+  TextInput as RNTextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const Text = (props: ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -29,7 +40,10 @@ export default function ResetPasswordScreen() {
   const [verifying, setVerifying] = useState(false);
   const [newPw, setNewPw] = useState("");
   const [newPw2, setNewPw2] = useState("");
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showNewPw2, setShowNewPw2] = useState(false);
   const [saving, setSaving] = useState(false);
+  const submittingRef = useRef(false);
 
   const colors = {
     background: "#fff",
@@ -73,7 +87,9 @@ export default function ResetPasswordScreen() {
         Alert.alert("알림", "인증번호를 발송했습니다.");
         return;
       }
-    } catch (e: any) {
+      Alert.alert("오류", "인증번호 발송에 실패했습니다.");
+    } catch (e: unknown) {
+      Alert.alert("발송 실패", getApiErrorMessage(e, "인증번호 발송에 실패했습니다."));
     } finally {
       setSending(false);
     }
@@ -96,16 +112,21 @@ export default function ResetPasswordScreen() {
         Alert.alert("알림", "휴대폰 인증이 완료되었습니다.");
         return;
       }
-      if (res.status === 2) return Alert.alert("알림", "인증번호가 만료되었습니다. 다시 발송해주세요.");
-      if (res.status === 3) return Alert.alert("알림", "인증 시도 횟수를 초과했습니다. 다시 발송해주세요.");
-      if (res.status === 4) return Alert.alert("알림", "인증번호가 올바르지 않습니다.");
-    } catch (e: any) {
+      const verifyMsg = resolvePhoneVerifyMessage(res.status);
+      if (verifyMsg) {
+        Alert.alert("알림", verifyMsg);
+        return;
+      }
+      Alert.alert("오류", "인증에 실패했습니다. 다시 시도해주세요.");
+    } catch (e: unknown) {
+      Alert.alert("인증 실패", getApiErrorMessage(e, "인증에 실패했습니다. 다시 시도해주세요."));
     } finally {
       setVerifying(false);
     }
   };
 
   const resetPassword = async () => {
+    if (submittingRef.current || saving) return;
     if (!username.trim()) {
       Alert.alert("알림", "아이디(닉네임)를 입력해주세요.");
       return;
@@ -122,6 +143,7 @@ export default function ResetPasswordScreen() {
       Alert.alert("알림", "새 비밀번호가 일치하지 않습니다.");
       return;
     }
+    submittingRef.current = true;
     try {
       setSaving(true);
       const res = await Auth.resetPasswordByPhone(
@@ -138,115 +160,162 @@ export default function ResetPasswordScreen() {
         ], { cancelable: true });
         return;
       }
-    } catch (e: any) {
-
+      Alert.alert("알림", resolveResetPasswordMessage(res.status, res.detail));
+    } catch (e: unknown) {
+      Alert.alert("재설정 실패", getApiErrorMessage(e, "비밀번호 재설정에 실패했습니다. 다시 시도해주세요."));
     } finally {
+      submittingRef.current = false;
       setSaving(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12, backgroundColor: colors.background }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>비밀번호 찾기</Text>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>아이디(닉네임)</Text>
-        <TextInput
-          placeholder="username"
-          placeholderTextColor="#666"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-          style={inputStyle}
-        />
-      </View>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>휴대폰 번호</Text>
-        <View style={inputRowStyle}>
-          <TextInput
-            placeholder="010-1234-5678"
-            placeholderTextColor="#666"
-            value={phoneNumber}
-            onChangeText={(v) => {
-              setPhoneNumber(mobile(v));
-              setVerificationId(null);
-              setPhoneCode("");
-              setSent(false);
-              setVerified(false);
-            }}
-            keyboardType="phone-pad"
-            style={{ flex: 1, padding: 12, color: colors.text }}
-          />
-          <TouchableOpacity
-            onPress={sendCode}
-            disabled={sending || !phoneNumber.trim()}
-            style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: sending ? 0.6 : 1 }}
-          >
-            <Text style={{ color: colors.primary, fontWeight: "bold" }}>{sent ? "재전송" : "인증"}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
-        <View style={inputRowStyle}>
-          <TextInput
-            placeholder="인증번호 6자리"
-            placeholderTextColor="#666"
-            value={phoneCode}
-            onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-            keyboardType="number-pad"
-            maxLength={6}
-            style={{ flex: 1, padding: 12, color: colors.text }}
-          />
-          <TouchableOpacity
-            onPress={verifyCode}
-            disabled={verifying || !phoneCode.trim()}
-            style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: verifying ? 0.6 : 1 }}
-          >
-            <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
-          </TouchableOpacity>
-        </View>
-        {!sent && (
-          <Text style={{ color: colors.text, fontSize: 13, marginTop: 6 }}>
-            먼저 인증번호를 발송한 뒤 입력해 주세요.
-          </Text>
-        )}
-      </View>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>새 비밀번호</Text>
-        <TextInput
-          placeholder="새 비밀번호"
-          placeholderTextColor="#666"
-          value={newPw}
-          onChangeText={setNewPw}
-          secureTextEntry
-          style={inputStyle}
-        />
-      </View>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>새 비밀번호 확인</Text>
-        <TextInput
-          placeholder="새 비밀번호 확인"
-          placeholderTextColor="#666"
-          value={newPw2}
-          onChangeText={setNewPw2}
-          secureTextEntry
-          style={inputStyle}
-        />
-      </View>
-
-      <TouchableOpacity
-        onPress={resetPassword}
-        disabled={saving}
-        style={{ backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 12, alignItems: "center", opacity: saving ? 0.6 : 1, marginTop: 8 }}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.select({ ios: "padding", android: "height" }) as "padding" | "height"}
+      keyboardVerticalOffset={100}
+    >
+      <ScrollView
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: "#fff", fontWeight: "bold" }}>비밀번호 재설정</Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>비밀번호 찾기</Text>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>아이디(닉네임)</Text>
+          <TextInput
+            placeholder="username"
+            placeholderTextColor="#666"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+            style={inputStyle}
+          />
+        </View>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>휴대폰 번호</Text>
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="010-1234-5678"
+              placeholderTextColor="#666"
+              value={phoneNumber}
+              onChangeText={(v) => {
+                setPhoneNumber(mobile(v));
+                setVerificationId(null);
+                setPhoneCode("");
+                setSent(false);
+                setVerified(false);
+              }}
+              keyboardType="phone-pad"
+              style={{ flex: 1, padding: 12, color: colors.text }}
+            />
+            <TouchableOpacity
+              onPress={sendCode}
+              disabled={sending || !phoneNumber.trim()}
+              style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: sending ? 0.6 : 1 }}
+            >
+              <Text style={{ color: verified ? "#2e7d32" : colors.primary, fontWeight: "bold" }}>
+                {verified ? "완료" : sent ? "재전송" : "인증"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="인증번호 6자리"
+              placeholderTextColor="#666"
+              value={phoneCode}
+              onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              style={{ flex: 1, padding: 12, color: colors.text }}
+            />
+            <TouchableOpacity
+              onPress={verifyCode}
+              disabled={verifying || verified || !sent || !phoneCode.trim()}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderLeftWidth: 1,
+                borderLeftColor: colors.border,
+                opacity: verifying || !sent ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: verified ? "#2e7d32" : colors.primary, fontWeight: "bold" }}>
+                {verified ? "완료" : "확인"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {!sent && (
+            <Text style={{ color: colors.text, fontSize: 13, marginTop: 6 }}>
+              먼저 인증번호를 발송한 뒤 입력해 주세요.
+            </Text>
+          )}
+        </View>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>새 비밀번호</Text>
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="새 비밀번호"
+              placeholderTextColor="#666"
+              value={newPw}
+              onChangeText={setNewPw}
+              secureTextEntry={!showNewPw}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ flex: 1, padding: 12, color: colors.text }}
+            />
+            <TouchableOpacity
+              onPress={() => setShowNewPw((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={showNewPw ? "비밀번호 숨기기" : "비밀번호 표시"}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name={showNewPw ? "eye-off" : "eye"} size={20} color="#111" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>새 비밀번호 확인</Text>
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="새 비밀번호 확인"
+              placeholderTextColor="#666"
+              value={newPw2}
+              onChangeText={setNewPw2}
+              secureTextEntry={!showNewPw2}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={{ flex: 1, padding: 12, color: colors.text }}
+            />
+            <TouchableOpacity
+              onPress={() => setShowNewPw2((v) => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={showNewPw2 ? "비밀번호 확인 숨기기" : "비밀번호 확인 표시"}
+              style={{ paddingHorizontal: 12, paddingVertical: 10 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name={showNewPw2 ? "eye-off" : "eye"} size={20} color="#111" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={resetPassword}
+          disabled={saving || !verified}
+          style={{ backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 12, alignItems: "center", opacity: saving || !verified ? 0.6 : 1, marginTop: 8 }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>비밀번호 재설정</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-

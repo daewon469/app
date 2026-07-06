@@ -63,6 +63,37 @@ export const adminApi: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
+// 로그인 전 공개 API(아이디/비밀번호 찾기 등) — 만료 토큰 첨부로 인한 실패 방지
+const publicApi: AxiosInstance = axios.create({
+  baseURL: API_URL,
+  timeout: 15000,
+});
+
+const isTransientNetworkFailure = (error: unknown): boolean => {
+  if (!axios.isAxiosError(error)) {
+    return String((error as { message?: string })?.message ?? "").trim() === "Network Error";
+  }
+  return !error.response || error.code === "ECONNABORTED";
+};
+
+async function postPublicJson<T>(url: string, body: unknown, retries = 1): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const { data } = await publicApi.post<T>(url, body);
+      return data;
+    } catch (e) {
+      lastError = e;
+      if (attempt < retries && isTransientNetworkFailure(e)) {
+        await new Promise((r) => setTimeout(r, 500));
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError;
+}
+
 // 토큰 기반 인증(서버가 Authorization을 요구하는 일부 엔드포인트용)
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   try {
@@ -91,8 +122,15 @@ export type LoginResponse =
   | { status: 1; detail?: string };
 export type PhoneSendResponse = { status: number; verification_id?: string; expires_in_sec?: number };
 export type PhoneVerifyResponse = { status: number; verified: boolean };
-export type FindUsernameResponse = { status: number; items: string[] };
+export type FindUsernameResponse = { status: number; items: string[]; detail?: string | null };
 export type ResetPasswordResponse = { status: number; detail?: string | null };
+export type SignupResponse = {
+  status: number;
+  detail?: string | null;
+  signup_bonus_amount?: number;
+  referral_bonus_referred_amount?: number;
+  referral_bonus_referrer_amount?: number;
+};
 
 const normalizePhoneDigits = (value: string) => (value || "").replace(/[^0-9]/g, "");
 
@@ -217,7 +255,7 @@ export type CashLedgerResponse = {
 export type MyPageSummaryResponse = {
   status: number;
   signup_date: string | null;
-  user_grade?: number; // -1-일반회원 / 0-아마추어 / 1-세미프로 / 2-프로 / 3-마스터 / 4-레전드
+  user_grade?: number; // -1-일반회원 / 0-아마추어 / 1-세미프로 / 2-프로 / 3-마스터 / 4-챌린저 / 5-레전드
   is_owner?: boolean;
   posts: {
     type1: number;
@@ -316,30 +354,26 @@ export type LikedListResponse<T = any> = {
 
 export const Auth = {
   logIn: async (username: string, password: string, pushToken?: string): Promise<LoginResponse> => {
-    const { data } = await api.post<LoginResponse>("/community/login", {
-       username,
-       password,
-       push_token:pushToken 
-      });
-    return data;
+    const body: { username: string; password: string; push_token?: string } = { username, password };
+    if (pushToken) body.push_token = pushToken;
+    return postPublicJson<LoginResponse>("/community/login", body);
   },
 
   sendPhoneVerification: async (phone_number: string): Promise<PhoneSendResponse> => {
-    const { data } = await api.post<PhoneSendResponse>("/community/phone/send", { phone_number: normalizePhoneDigits(phone_number) });
-    return data;
+    return postPublicJson<PhoneSendResponse>("/community/phone/send", {
+      phone_number: normalizePhoneDigits(phone_number),
+    });
   },
 
   verifyPhoneCode: async (verification_id: string, code: string): Promise<PhoneVerifyResponse> => {
-    const { data } = await api.post<PhoneVerifyResponse>("/community/phone/verify", { verification_id, code });
-    return data;
+    return postPublicJson<PhoneVerifyResponse>("/community/phone/verify", { verification_id, code });
   },
 
   findUsernameByPhone: async (phone_number: string, phone_verification_id: string): Promise<FindUsernameResponse> => {
-    const { data } = await api.post<FindUsernameResponse>("/community/account/find-username", {
+    return postPublicJson<FindUsernameResponse>("/community/account/find-username", {
       phone_number: normalizePhoneDigits(phone_number),
       phone_verification_id,
     });
-    return data;
   },
 
   resetPasswordByPhone: async (
@@ -349,14 +383,13 @@ export const Auth = {
     new_password: string,
     new_password_confirm: string,
   ): Promise<ResetPasswordResponse> => {
-    const { data } = await api.post<ResetPasswordResponse>("/community/account/reset-password", {
+    return postPublicJson<ResetPasswordResponse>("/community/account/reset-password", {
       username,
       phone_number: normalizePhoneDigits(phone_number),
       phone_verification_id,
       new_password,
       new_password_confirm,
     });
-    return data;
   },
 
   signUp: async (
@@ -373,8 +406,8 @@ export const Auth = {
     custom_region_codes?: string[],
     area_region_codes?: string[],
     custom_role_codes?: string[],
-  ) => {
-    const { data } = await api.post("/community/signup", {
+  ): Promise<SignupResponse> => {
+    return postPublicJson<SignupResponse>("/community/signup", {
       username,
       password,
       password_confirm,
@@ -389,7 +422,6 @@ export const Auth = {
       area_region_codes: area_region_codes ?? [],
       custom_role_codes: custom_role_codes ?? [],
     });
-    return data;
   },
 
   logOut: async () => {

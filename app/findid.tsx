@@ -1,7 +1,21 @@
 import { Auth } from "@/lib/api";
+import {
+  getApiErrorMessage,
+  resolveFindUsernameMessage,
+  resolvePhoneVerifyMessage,
+} from "@/lib/authErrors";
 import { router } from "expo-router";
-import { useState, type ComponentProps } from "react";
-import { Alert, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { useRef, useState, type ComponentProps } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text as RNText,
+  TextInput as RNTextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const Text = (props: ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -27,6 +41,7 @@ export default function FindIdScreen() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [finding, setFinding] = useState(false);
+  const submittingRef = useRef(false);
 
   const colors = {
     background: "#fff",
@@ -62,8 +77,8 @@ export default function FindIdScreen() {
         return;
       }
       Alert.alert("오류", "인증번호 발송에 실패했습니다.");
-    } catch (e: any) {
-      Alert.alert("발송 실패", e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.");
+    } catch (e: unknown) {
+      Alert.alert("발송 실패", getApiErrorMessage(e, "인증번호 발송에 실패했습니다."));
     } finally {
       setSending(false);
     }
@@ -86,101 +101,136 @@ export default function FindIdScreen() {
         Alert.alert("알림", "휴대폰 인증이 완료되었습니다.");
         return;
       }
-      if (res.status === 2) return Alert.alert("알림", "인증번호가 만료되었습니다. 다시 발송해주세요.");
-      if (res.status === 3) return Alert.alert("알림", "인증 시도 횟수를 초과했습니다. 다시 발송해주세요.");
-      if (res.status === 4) return Alert.alert("알림", "인증번호가 올바르지 않습니다.");
-      Alert.alert("오류", "인증에 실패했습니다.");
-    } catch (e: any) {
-      Alert.alert("인증 실패", e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.");
+      const verifyMsg = resolvePhoneVerifyMessage(res.status);
+      if (verifyMsg) {
+        Alert.alert("알림", verifyMsg);
+        return;
+      }
+      Alert.alert("오류", "인증에 실패했습니다. 다시 시도해주세요.");
+    } catch (e: unknown) {
+      Alert.alert("인증 실패", getApiErrorMessage(e, "인증에 실패했습니다. 다시 시도해주세요."));
     } finally {
       setVerifying(false);
     }
   };
 
   const findId = async () => {
+    if (submittingRef.current || finding) return;
     if (!verified || !verificationId) {
       Alert.alert("알림", "휴대폰 인증을 완료해주세요.");
       return;
     }
+    submittingRef.current = true;
     try {
       setFinding(true);
       const res = await Auth.findUsernameByPhone(phoneNumber.trim(), verificationId);
-      if (res.status === 0 && res.items?.length) {
-        Alert.alert("아이디(닉네임) 찾기", res.items.join("\n"), [
-          { text: "로그인으로", onPress: () => router.replace("/login") },
-          { text: "닫기" },
-        ], { cancelable: true });
+      if (res.status === 0) {
+        if (res.items?.length) {
+          Alert.alert("아이디(닉네임) 찾기", res.items.join("\n"), [
+            { text: "로그인으로", onPress: () => router.replace("/login") },
+            { text: "닫기" },
+          ], { cancelable: true });
+          return;
+        }
+        Alert.alert("알림", "해당 번호로 가입된 아이디가 없습니다.");
         return;
       }
-      Alert.alert("알림", "해당 번호로 가입된 아이디가 없습니다.");
-    } catch (e: any) {
-      Alert.alert("오류", e?.response?.data?.detail || e?.message || "잠시 후 다시 시도해주세요.");
+      Alert.alert("알림", resolveFindUsernameMessage(res.status, res.detail));
+    } catch (e: unknown) {
+      Alert.alert("오류", getApiErrorMessage(e, "아이디 찾기에 실패했습니다. 다시 시도해주세요."));
     } finally {
+      submittingRef.current = false;
       setFinding(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12, backgroundColor: colors.background }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>아이디 찾기</Text>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>휴대폰 번호</Text>
-        <View style={inputRowStyle}>
-          <TextInput
-            placeholder="010-1234-5678"
-            placeholderTextColor="#666"
-            value={phoneNumber}
-            onChangeText={(v) => {
-              setPhoneNumber(mobile(v));
-              setVerificationId(null);
-              setPhoneCode("");
-              setSent(false);
-              setVerified(false);
-            }}
-            keyboardType="phone-pad"
-            style={{ flex: 1, padding: 12, color: colors.text }}
-          />
-          <TouchableOpacity
-            onPress={sendCode}
-            disabled={sending || !phoneNumber.trim()}
-            style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: sending ? 0.6 : 1 }}
-          >
-            <Text style={{ color: colors.primary, fontWeight: "bold" }}>{sent ? "재전송" : "인증"}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View>
-        <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
-        <View style={inputRowStyle}>
-          <TextInput
-            placeholder="인증번호 6자리"
-            placeholderTextColor="#666"
-            value={phoneCode}
-            onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-            keyboardType="number-pad"
-            maxLength={6}
-            style={{ flex: 1, padding: 12, color: colors.text }}
-          />
-          <TouchableOpacity
-            onPress={verifyCode}
-            disabled={verifying || !sent || !phoneCode.trim()}
-            style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: verifying || !sent ? 0.6 : 1 }}
-          >
-            <Text style={{ color: colors.primary, fontWeight: "bold" }}>확인</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        onPress={findId}
-        disabled={finding}
-        style={{ backgroundColor: colors.primary, borderRadius: 16, paddingVertical: 12, alignItems: "center", opacity: finding ? 0.6 : 1, marginTop: 8 }}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.select({ ios: "padding", android: "height" }) as "padding" | "height"}
+      keyboardVerticalOffset={100}
+    >
+      <ScrollView
+        contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: "#fff", fontWeight: "bold" }}>아이디 찾기</Text>
-      </TouchableOpacity>
-    </View>
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text }}>아이디 찾기</Text>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>휴대폰 번호</Text>
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="010-1234-5678"
+              placeholderTextColor="#666"
+              value={phoneNumber}
+              onChangeText={(v) => {
+                setPhoneNumber(mobile(v));
+                setVerificationId(null);
+                setPhoneCode("");
+                setSent(false);
+                setVerified(false);
+              }}
+              keyboardType="phone-pad"
+              style={{ flex: 1, padding: 12, color: colors.text }}
+            />
+            <TouchableOpacity
+              onPress={sendCode}
+              disabled={sending || !phoneNumber.trim()}
+              style={{ paddingHorizontal: 12, paddingVertical: 10, borderLeftWidth: 1, borderLeftColor: colors.border, opacity: sending ? 0.6 : 1 }}
+            >
+              <Text style={{ color: verified ? "#2e7d32" : colors.primary, fontWeight: "bold" }}>
+                {verified ? "완료" : sent ? "재전송" : "인증"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View>
+          <Text style={{ color: colors.text, marginBottom: 6 }}>인증번호</Text>
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="인증번호 6자리"
+              placeholderTextColor="#666"
+              value={phoneCode}
+              onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              style={{ flex: 1, padding: 12, color: colors.text }}
+            />
+            <TouchableOpacity
+              onPress={verifyCode}
+              disabled={verifying || verified || !sent || !phoneCode.trim()}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderLeftWidth: 1,
+                borderLeftColor: colors.border,
+                opacity: verifying || !sent ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: verified ? "#2e7d32" : colors.primary, fontWeight: "bold" }}>
+                {verified ? "완료" : "확인"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          onPress={findId}
+          disabled={finding || !verified}
+          style={{
+            backgroundColor: colors.primary,
+            borderRadius: 16,
+            paddingVertical: 12,
+            alignItems: "center",
+            opacity: finding || !verified ? 0.6 : 1,
+            marginTop: 8,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>아이디 찾기</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-

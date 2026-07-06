@@ -262,11 +262,14 @@ export default function SignupScreen() {
           marketingConsent,
         );
         if (res.status === 0) {
-          const referralAmount = Number((res as any)?.referral_bonus_referred_amount ?? 0);
-          const msg =
-            referralAmount > 0
-              ? `회원가입 성공!\n추천인 가입 포인트 ${referralAmount}점 지급`
-              : "회원가입 성공!";
+          const referralAmount = Number(res.referral_bonus_referred_amount ?? 0);
+          const signupAmount = Number(res.signup_bonus_amount ?? 0);
+          let msg = "회원가입 성공!";
+          if (referralAmount > 0) {
+            msg = `회원가입 성공!\n추천인 가입 포인트 ${referralAmount}점 지급`;
+          } else if (signupAmount > 0) {
+            msg = `회원가입 성공!\n가입 축하 포인트 ${signupAmount}점 지급`;
+          }
           Alert.alert("알림", msg, [
             { text: "확인", onPress: () => router.replace("/login") },
           ]);

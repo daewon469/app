@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -12,31 +12,55 @@ import PostCardS, { LIST_CARD_HEIGHT_TYPE_S } from "./postcards";
 
 type Props = {
   posts: Post[];
+  autoPlayMs?: number;
+  fullWidth?: boolean;
+  listHorizontalPadding?: number;
 };
 
-export default function PostcardSSlider({ posts }: Props) {
+export default function PostcardSSlider({
+  posts,
+  autoPlayMs = 0,
+  fullWidth = false,
+  listHorizontalPadding = 10,
+}: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<FlatList<Post>>(null);
+  const activeIndexRef = useRef(0);
 
-  // list FlatList paddingHorizontal(10) × 2
-  const cardWidth = useMemo(() => Math.floor(windowWidth - 20), [windowWidth]);
-  const cardHeight = useMemo(
-    () => Math.min(LIST_CARD_HEIGHT_TYPE_S, Math.round(cardWidth * 0.95)),
-    [cardWidth]
+  const cardWidth = useMemo(
+    () => Math.floor(fullWidth ? windowWidth : windowWidth - listHorizontalPadding * 2),
+    [fullWidth, listHorizontalPadding, windowWidth]
   );
+  const cardHeight = useMemo(() => LIST_CARD_HEIGHT_TYPE_S, []);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
     const idx = Math.round(x / cardWidth);
     const next = Math.max(0, Math.min(posts.length - 1, idx));
+    activeIndexRef.current = next;
     if (next !== activeIndex) setActiveIndex(next);
   };
+
+  useEffect(() => {
+    if (!autoPlayMs || posts.length <= 1) return;
+
+    const id = setInterval(() => {
+      const next = (activeIndexRef.current + 1) % posts.length;
+      activeIndexRef.current = next;
+      setActiveIndex(next);
+      listRef.current?.scrollToIndex({ index: next, animated: true });
+    }, autoPlayMs);
+
+    return () => clearInterval(id);
+  }, [autoPlayMs, posts.length, cardWidth]);
 
   if (posts.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: 8 }}>
+    <View style={{ marginBottom: 8, width: cardWidth, alignSelf: fullWidth ? "stretch" : undefined }}>
       <FlatList
+        ref={listRef}
         data={posts}
         keyExtractor={(item) => String(item.id)}
         horizontal
@@ -49,11 +73,22 @@ export default function PostcardSSlider({ posts }: Props) {
           offset: cardWidth * index,
           index,
         })}
+        onScrollToIndexFailed={(info) => {
+          listRef.current?.scrollToOffset({
+            offset: cardWidth * info.index,
+            animated: true,
+          });
+        }}
         onScroll={onScroll}
         scrollEventThrottle={16}
         renderItem={({ item }) => (
           <View style={{ width: cardWidth }}>
-            <PostCardS post={item} height={cardHeight} />
+            <PostCardS
+              post={item}
+              height={cardHeight}
+              borderRadius={fullWidth ? 0 : 12}
+              edgeToEdge={fullWidth}
+            />
           </View>
         )}
       />
