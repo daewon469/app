@@ -11,7 +11,17 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
-export default function NewsPreviewSection() {
+type Props = {
+  postType?: 2 | 3;
+  title?: string;
+  moreHref?: "/list2" | "/list3" | "/listboard";
+};
+
+export default function NewsPreviewSection({
+  postType = 2,
+  title = "분양 뉴스",
+  moreHref = "/list2",
+}: Props) {
   const [isLogin, setIsLogin] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
 
@@ -39,16 +49,15 @@ export default function NewsPreviewSection() {
     (async () => {
       try {
         setLoading(true);
-        const { items } = await Posts.listByType(2, {
+        const { items } = await Posts.listByType(postType, {
           status: "published",
         });
-
         setItems(items.slice(0, 3));
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [postType]);
 
   useEffect(() => {
     (async () => {
@@ -77,12 +86,12 @@ export default function NewsPreviewSection() {
           Alert.alert("알림", "로그인이 필요합니다.");
           return;
         }
-        router.push("/listboard")
+        router.push(moreHref);
       }}
       style={{
         marginHorizontal: 0,
         marginTop: 0,
-        marginBottom: 0, 
+        marginBottom: 0,
       }}
     >
       <Card
@@ -101,7 +110,6 @@ export default function NewsPreviewSection() {
             paddingHorizontal: 16,
           }}
         >
-          {/* 제목 + 더보기 */}
           <View
             style={{
               flexDirection: "row",
@@ -117,7 +125,7 @@ export default function NewsPreviewSection() {
                 color: colors.text,
               }}
             >
-              분양 뉴스
+              {title}
             </Text>
 
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -131,11 +139,7 @@ export default function NewsPreviewSection() {
               >
                 더보기
               </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={colors.primary}
-              />
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
             </View>
           </View>
 
@@ -145,9 +149,8 @@ export default function NewsPreviewSection() {
               style={{
                 borderTopWidth: 0.5,
                 borderTopColor: colors.border,
-
-                height: 27, // 높이를 고정
-                justifyContent: "center", // ← 세로 중앙 정렬 핵심
+                height: 27,
+                justifyContent: "center",
                 flexDirection: "row",
                 alignItems: "center",
               }}
@@ -158,7 +161,7 @@ export default function NewsPreviewSection() {
                   fontWeight: "400",
                   color: colors.text,
                   flex: 1,
-                  lineHeight: 18, // fontSize에 맞춰 자연스럽게
+                  lineHeight: 18,
                 }}
                 numberOfLines={1}
               >
@@ -180,5 +183,4 @@ export default function NewsPreviewSection() {
       </Card>
     </Pressable>
   );
-
 }

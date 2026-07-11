@@ -529,8 +529,9 @@ ${INSTALL_URL}
                     </View>
                 </View>
 
-                <View style={{ marginTop: 10 }}>
-                    <NewsPreviewSection />
+                <View style={{ marginTop: 10, gap: 10 }}>
+                    <NewsPreviewSection postType={2} title="분양 뉴스" moreHref="/list2" />
+                    <NewsPreviewSection postType={3} title="분양인 수다" moreHref="/list3" />
                 </View>
 
                 {/* 추가로 분리된 "추천/내 정보 관리" 섹션 */}

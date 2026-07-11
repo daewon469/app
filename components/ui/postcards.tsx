@@ -8,20 +8,16 @@ import { formatProvinceCity, formatRoles } from "../../utils/postCardFormat";
 import Heart from "./heart";
 
 /** 웹 listCardLayout LIST_CARD_HEIGHT_TYPE_S 와 동일 */
-export const LIST_CARD_HEIGHT_TYPE_S = 250;
+export const LIST_CARD_HEIGHT_TYPE_S = 280;
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
-/** 슬라이드 카드(어두운 배경)용 현장 한마디 색 — 검은색이면 흰색 */
+/** 밝은 메쉬 위 현장 한마디 — 미지정 시 검정 */
 function resolveSlideHighlightColor(color?: string | null) {
   const raw = String(color ?? "").trim();
-  if (!raw) return "#fff";
-  const lower = raw.toLowerCase();
-  if (lower === "black" || lower === "#000" || lower === "#000000" || lower === "#111111") {
-    return "#fff";
-  }
+  if (!raw) return "#111";
   return raw;
 }
 
@@ -61,89 +57,61 @@ function PostCardS({
   const imageUri = useMemo(() => resolveSlideCardImage(post), [post]);
   const industryProvinceCity = `${post.job_industry ?? ""}/${formatProvinceCity(post.province, post.city)}`;
   const resolvedRadius = edgeToEdge ? 0 : borderRadius;
-  const topPaddingH = edgeToEdge ? 12 : 8;
-  const topPaddingTop = edgeToEdge ? 10 : 4;
+  const padH = edgeToEdge ? 12 : 8;
 
   return (
-    <Link href={{ pathname: "/[id]", params: { id: post.id } }} asChild>
-      <Pressable
-        style={{
-          position: "relative",
-          width: "100%",
-          height,
-          overflow: "visible",
-          borderRadius: resolvedRadius,
-          borderWidth: edgeToEdge ? 0 : 1,
-          borderColor: "#000",
-          backgroundColor: "#000",
-          shadowColor: "#000",
-          shadowOpacity: edgeToEdge ? 0 : 0.18,
-          shadowRadius: edgeToEdge ? 0 : 8,
-          shadowOffset: { width: 0, height: edgeToEdge ? 0 : 4 },
-          elevation: edgeToEdge ? 0 : 4,
-        }}
-      >
-        <View
+    <View style={{ position: "relative", width: "100%", height }}>
+      <Link href={{ pathname: "/[id]", params: { id: post.id } }} asChild>
+        <Pressable
           style={{
-            ...StyleSheet.absoluteFillObject,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             overflow: "hidden",
             borderRadius: resolvedRadius,
+            borderWidth: edgeToEdge ? 0 : 1,
+            borderColor: "#000",
+            backgroundColor: "#000",
           }}
         >
           <CardImage uri={imageUri} />
 
+          {/* 상단: 흰 메쉬 + 검정 텍스트 (웹 PostcardS 동일) */}
           <LinearGradient
-            pointerEvents="box-none"
-            colors={["rgba(0,0,0,0.9)", "rgba(0,0,0,0.55)", "rgba(0,0,0,0)"]}
-            locations={[0, 0.55, 1]}
+            pointerEvents="none"
+            colors={["rgba(255,255,255,1)", "rgba(255,255,255,0.9)", "rgba(255,255,255,0)"]}
+            locations={[0, 0.45, 1]}
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
               zIndex: 1,
-              paddingHorizontal: topPaddingH,
-              paddingTop: topPaddingTop,
-              paddingBottom: 14,
+              paddingHorizontal: padH,
+              paddingTop: 6,
+              paddingBottom: 20,
             }}
           >
-            <View
-              pointerEvents="box-none"
+            <Text
+              numberOfLines={2}
               style={{
-                flexDirection: "row",
-                alignItems: "flex-start",
-                gap: 6,
+                fontSize: 16,
+                fontWeight: "700",
+                lineHeight: 20,
+                color: "#000",
               }}
             >
-              <Text
-                numberOfLines={2}
-                style={{
-                  flex: 1,
-                  fontSize: 16,
-                  fontWeight: "700",
-                  lineHeight: 22,
-                  color: "#fff",
-                }}
-              >
-                {post.title}
-              </Text>
-              {showHeart ? (
-                <View
-                  style={{ height: 22, justifyContent: "flex-start", marginTop: -6 }}
-                  pointerEvents="auto"
-                >
-                  <Heart postId={post.id} postLiked={post.liked} size={20} />
-                </View>
-              ) : null}
-            </View>
+              {post.title}
+            </Text>
             {post.highlight_content ? (
               <Text
                 numberOfLines={1}
                 style={{
-                  marginTop: 2,
                   fontSize: 15,
                   fontWeight: "700",
-                  lineHeight: 20,
+                  lineHeight: 18,
                   color: resolveSlideHighlightColor(post.highlight_color),
                 }}
               >
@@ -152,19 +120,20 @@ function PostCardS({
             ) : null}
           </LinearGradient>
 
+          {/* 하단: 흰 메쉬 + 파란/빨간 텍스트 */}
           <LinearGradient
             pointerEvents="none"
-            colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.92)"]}
-            locations={[0, 0.45, 1]}
+            colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.9)", "rgba(255,255,255,1)"]}
+            locations={[0, 0.55, 1]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               bottom: 0,
               zIndex: 1,
-              paddingHorizontal: edgeToEdge ? 12 : 8,
-              paddingTop: 16,
-              paddingBottom: 8,
+              paddingHorizontal: padH,
+              paddingTop: 20,
+              paddingBottom: 6,
             }}
           >
             <Text
@@ -172,7 +141,8 @@ function PostCardS({
               style={{
                 fontSize: 15,
                 fontWeight: "700",
-                color: "#7eb8ff",
+                lineHeight: 18,
+                color: "#0B57D0",
               }}
             >
               {industryProvinceCity}
@@ -180,18 +150,27 @@ function PostCardS({
             <Text
               numberOfLines={1}
               style={{
-                marginTop: 2,
                 fontSize: 15,
                 fontWeight: "700",
-                color: "#ffb4b4",
+                lineHeight: 18,
+                color: "#C62828",
               }}
             >
               {formatRoles(post)}
             </Text>
           </LinearGradient>
+        </Pressable>
+      </Link>
+
+      {showHeart ? (
+        <View
+          pointerEvents="box-none"
+          style={{ position: "absolute", right: 8, top: 8, zIndex: 20 }}
+        >
+          <Heart postId={post.id} postLiked={post.liked} size={22} />
         </View>
-      </Pressable>
-    </Link>
+      ) : null}
+    </View>
   );
 }
 
