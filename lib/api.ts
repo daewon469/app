@@ -424,6 +424,22 @@ export const Auth = {
     });
   },
 
+  checkUsername: async (
+    username: string,
+    exclude?: string,
+  ): Promise<{ status: number; available: boolean; detail?: string }> => {
+    const { data } = await publicApi.get<{ status: number; available: boolean; detail?: string }>(
+      "/community/username/check",
+      {
+        params: {
+          username: username.trim(),
+          ...(exclude?.trim() ? { exclude: exclude.trim() } : {}),
+        },
+      },
+    );
+    return data ?? { status: 1, available: false };
+  },
+
   logOut: async () => {
     // 토큰/Redux 기반 로그아웃은 사용하지 않음. isLogin 플래그만 false로 설정.
     try {

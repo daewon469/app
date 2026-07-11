@@ -111,7 +111,7 @@ export default function TopBar() {
 
           <Pressable
             hitSlop={tabHitSlop}
-            onPress={() => Alert.alert("안내", "업데이트 예정입니다.")}
+            onPress={() => router.push("/list4")}
             style={tabButtonStyle}
           >
             <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
@@ -134,7 +134,7 @@ export default function TopBar() {
           {isLogin ? (
             <Pressable
               hitSlop={tabHitSlop}
-              onPress={() => router.push("/list4")}
+              onPress={() => Alert.alert("안내", "업데이트 예정입니다.")}
               style={tabButtonStyle}
             >
               <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>

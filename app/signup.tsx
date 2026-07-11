@@ -54,6 +54,8 @@ export default function SignupScreen() {
   const originalUsername = params.username as string | undefined;
   const marketingConsent = params.marketing_consent === "1";
   const [loading, setLoading] = useState(false);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const today = new Date();
   const signup_date = today.toISOString().slice(0, 10);
 
@@ -157,6 +159,47 @@ export default function SignupScreen() {
       Alert.alert("인증 실패", getApiErrorMessage(e, "인증에 실패했습니다. 다시 시도해주세요."));
     } finally {
       setVerifyingCode(false);
+    }
+  };
+
+  const checkUsernameDuplicate = async () => {
+    const name = username.trim();
+    if (!name) {
+      Alert.alert("알림", "닉네임을 입력해 주세요.");
+      return;
+    }
+    if (name.length < 2) {
+      Alert.alert("알림", "닉네임은 최소 2글자 이상이어야 합니다.");
+      return;
+    }
+    if (isEditMode && originalUsername && name === String(originalUsername).trim()) {
+      setUsernameAvailable(true);
+      Alert.alert("알림", "현재 사용 중인 닉네임입니다.");
+      return;
+    }
+    try {
+      setCheckingUsername(true);
+      const res = await Auth.checkUsername(
+        name,
+        isEditMode ? (originalUsername as string | undefined) : undefined,
+      );
+      if (res.status === 0 && res.available) {
+        setUsernameAvailable(true);
+        Alert.alert("알림", "사용 가능한 닉네임입니다.");
+        return;
+      }
+      if (res.status === 2) {
+        setUsernameAvailable(false);
+        Alert.alert("알림", res.detail || "닉네임 형식이 올바르지 않습니다.");
+        return;
+      }
+      setUsernameAvailable(false);
+      Alert.alert("알림", "이미 사용 중인 닉네임입니다.");
+    } catch (e: unknown) {
+      setUsernameAvailable(null);
+      Alert.alert("오류", getApiErrorMessage(e, "중복확인에 실패했습니다."));
+    } finally {
+      setCheckingUsername(false);
     }
   };
 
@@ -328,13 +371,38 @@ export default function SignupScreen() {
 
         <View>
           <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>※ 닉네임 (한글가능)</Text>
-          <TextInput
-            placeholder="닉네임을 입력해 주세요."
-            placeholderTextColor="#666"
-            value={username}
-            onChangeText={setUserName}
-            style={[inputStyle, inputFontWeightStyle(username)]}
-          />
+          <View style={inputRowStyle}>
+            <TextInput
+              placeholder="닉네임을 입력해 주세요."
+              placeholderTextColor="#666"
+              value={username}
+              onChangeText={(v) => {
+                setUserName(v);
+                setUsernameAvailable(null);
+              }}
+              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(username) }}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              onPress={checkUsernameDuplicate}
+              disabled={checkingUsername || !username.trim()}
+              accessibilityRole="button"
+              accessibilityLabel="닉네임 중복확인"
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderLeftWidth: 1,
+                borderLeftColor: colors.border,
+                opacity: checkingUsername || !username.trim() ? 0.5 : 1,
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={{ color: "#4A6CF7", fontSize: 14, fontWeight: "700" }}>
+                {checkingUsername ? "확인중" : usernameAvailable ? "완료" : "중복확인"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View>

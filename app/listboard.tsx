@@ -52,11 +52,11 @@ export default function NewBoard() {
       try {
         setLoading(true);
         const [newsRes, comRes] = await Promise.all([
-          Posts.listByType(2, { status: "published", limit: 30 }),
-          Posts.listByType(3, { status: "published", limit: 50 }),
+          Posts.listByType(2, { status: "published", limit: 15 }),
+          Posts.listByType(3, { status: "published", limit: 15 }),
         ]);
-        setNews(newsRes.items.slice(0, 7));
-        setCommunity(comRes.items.slice(0, 8));
+        setNews(newsRes.items.slice(0, 15));
+        setCommunity(comRes.items.slice(0, 15));
       } finally {
         setLoading(false);
       }
@@ -173,113 +173,119 @@ export default function NewBoard() {
         )}
 
 
-        <View style={{ marginBottom: 0 }}>
-
-          <View style={{
-            marginBottom: 10,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}>
-            <Text
-              style={{
-                fontSize: 23,
-                color: colors.text,
-                ...fixedFontWeight("700"),
-              }}
-            >
-              분양 뉴스
-            </Text>
-
-            <Pressable
-              onPress={() => router.push("/list2")}
-              style={{
-                paddingHorizontal: 6,
-                paddingVertical: 4,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Text
+        {!loading && (
+          <View style={{ flexDirection: "row", alignItems: "stretch" }}>
+            <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+              <View
                 style={{
-                  fontSize: 16,
-                  color: colors.primary,
-                  marginRight: 2,
-                  ...fixedFontWeight("500"),
+                  marginBottom: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
-                더보기
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    color: colors.text,
+                    ...fixedFontWeight("700"),
+                  }}
+                >
+                  분양 뉴스
+                </Text>
 
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-            </Pressable>
+                <Pressable
+                  onPress={() => router.push("/list2")}
+                  style={{
+                    paddingHorizontal: 4,
+                    paddingVertical: 4,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: colors.primary,
+                      marginRight: 2,
+                      ...fixedFontWeight("500"),
+                    }}
+                  >
+                    더보기
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                </Pressable>
+              </View>
+
+              {news.length === 0 ? (
+                <Text style={{ fontSize: 13, color: colors.subText }}>
+                  아직 등록된 분양 뉴스가 없습니다.
+                </Text>
+              ) : (
+                <View style={listCardStyle}>{news.map(renderNewsCard)}</View>
+              )}
+            </View>
+
+            <View
+              style={{
+                width: 1,
+                backgroundColor: colors.border,
+                marginHorizontal: 4,
+              }}
+            />
+
+            <View style={{ flex: 1, minWidth: 0, paddingLeft: 8 }}>
+              <View
+                style={{
+                  marginBottom: 10,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 20,
+                    color: colors.text,
+                    ...fixedFontWeight("700"),
+                  }}
+                >
+                  분<Text style={{ fontSize: 14 }}>양인</Text> 수<Text style={{ fontSize: 14 }}>다</Text>
+                </Text>
+
+                <Pressable
+                  onPress={() => router.push("/list3")}
+                  style={{
+                    paddingHorizontal: 4,
+                    paddingVertical: 4,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: colors.primary,
+                      marginRight: 2,
+                      ...fixedFontWeight("500"),
+                    }}
+                  >
+                    더보기
+                  </Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                </Pressable>
+              </View>
+
+              {community.length === 0 ? (
+                <Text style={{ fontSize: 13, color: colors.subText }}>
+                  아직 등록된 커뮤니티 글이 없습니다.
+                </Text>
+              ) : (
+                <View style={listCardStyle}>{community.map(renderPostCard)}</View>
+              )}
+            </View>
           </View>
-
-          {news.length === 0 && !loading ? (
-            <Text style={{ fontSize: 13, color: colors.subText }}>
-              아직 등록된 분양 뉴스가 없습니다.
-            </Text>
-          ) : (
-            <View style={listCardStyle}>{news.map(renderNewsCard)}</View>
-          )}
-        </View>
-
-        <View
-          style={{
-            backgroundColor: colors.border,
-            marginVertical: 8,
-          }}
-        />
-        <View style={{ marginTop: 12 }}>
-
-          <View style={{
-            marginBottom: 10,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}>
-
-            <Text
-              style={{
-                fontSize: 23,
-                color: colors.text,
-                ...fixedFontWeight("700"),
-              }}
-            >
-              분<Text style={{ fontSize: 16 }}>양인</Text> 수<Text style={{ fontSize: 16 }}>다</Text>
-            </Text>
-
-            <Pressable
-              onPress={() => router.push("/list3")}
-              style={{
-                paddingHorizontal: 6,
-                paddingVertical: 4,
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: colors.primary,
-                  marginRight: 2,
-                  ...fixedFontWeight("500"),
-                }}
-              >
-                더보기
-              </Text>
-
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-            </Pressable></View>
-
-          {community.length === 0 && !loading ? (
-            <Text style={{ fontSize: 13, color: colors.subText }}>
-              아직 등록된 커뮤니티 글이 없습니다.
-            </Text>
-          ) : (
-            <View style={listCardStyle}>{community.map(renderPostCard)}</View>
-          )}
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
