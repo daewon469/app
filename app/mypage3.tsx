@@ -229,7 +229,7 @@ const fetchList = useCallback(
       >
         <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text }}>{item.title}</Text>
         <Text style={{ fontSize: 13, fontWeight: "600", color: "#4A6CF7" }}>
-          작성자 {item.author?.username ?? "-"}
+          {item.author?.username ?? "-"}
         </Text>
         <Text numberOfLines={2} style={{ color: colors.text }}>
           {item.content}
