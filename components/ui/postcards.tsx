@@ -1,6 +1,5 @@
 import { Link } from "expo-router";
 import { Image as ExpoImage } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text as RNText, View } from "react-native";
 import { resolveMediaUrl, type Post } from "../../lib/api";
@@ -8,7 +7,7 @@ import { formatProvinceCity, formatRoles } from "../../utils/postCardFormat";
 import Heart from "./heart";
 
 /** 웹 listCardLayout LIST_CARD_HEIGHT_TYPE_S 와 동일 */
-export const LIST_CARD_HEIGHT_TYPE_S = 280;
+export const LIST_CARD_HEIGHT_TYPE_S = 364;
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -57,7 +56,6 @@ function PostCardS({
   const imageUri = useMemo(() => resolveSlideCardImage(post), [post]);
   const industryProvinceCity = `${post.job_industry ?? ""}/${formatProvinceCity(post.province, post.city)}`;
   const resolvedRadius = edgeToEdge ? 0 : borderRadius;
-  const padH = edgeToEdge ? 12 : 8;
 
   return (
     <View style={{ position: "relative", width: "100%", height }}>
@@ -78,20 +76,20 @@ function PostCardS({
         >
           <CardImage uri={imageUri} />
 
-          {/* 상단: 흰 메쉬 + 검정 텍스트 (웹 PostcardS 동일) */}
-          <LinearGradient
+          {/* 상단: 불투명 흰 배경 + 하단 검정 테두리 */}
+          <View
             pointerEvents="none"
-            colors={["rgba(255,255,255,1)", "rgba(255,255,255,0.9)", "rgba(255,255,255,0)"]}
-            locations={[0, 0.45, 1]}
             style={{
               position: "absolute",
               top: 0,
               left: 0,
               right: 0,
               zIndex: 1,
-              paddingHorizontal: padH,
-              paddingTop: 6,
-              paddingBottom: 20,
+              paddingHorizontal: 8,
+              paddingVertical: 6,
+              backgroundColor: "#fff",
+              borderBottomWidth: 1,
+              borderBottomColor: "#000",
             }}
           >
             <Text
@@ -118,22 +116,22 @@ function PostCardS({
                 {post.highlight_content}
               </Text>
             ) : null}
-          </LinearGradient>
+          </View>
 
-          {/* 하단: 흰 메쉬 + 파란/빨간 텍스트 */}
-          <LinearGradient
+          {/* 하단: 불투명 흰 배경 + 상단 검정 테두리 */}
+          <View
             pointerEvents="none"
-            colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.9)", "rgba(255,255,255,1)"]}
-            locations={[0, 0.55, 1]}
             style={{
               position: "absolute",
               left: 0,
               right: 0,
               bottom: 0,
               zIndex: 1,
-              paddingHorizontal: padH,
-              paddingTop: 20,
-              paddingBottom: 6,
+              paddingHorizontal: 8,
+              paddingVertical: 6,
+              backgroundColor: "#fff",
+              borderTopWidth: 1,
+              borderTopColor: "#000",
             }}
           >
             <Text
@@ -158,7 +156,7 @@ function PostCardS({
             >
               {formatRoles(post)}
             </Text>
-          </LinearGradient>
+          </View>
         </Pressable>
       </Link>
 

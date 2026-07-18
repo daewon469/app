@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ScrollNavigator from "../components/ScrollNavigator";
 import { Post, Posts, StatusType } from "../lib/api";
+import { formatPostDateTime } from "../utils/dateFormat";
 import { getSession } from "../utils/session";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
@@ -146,12 +147,6 @@ export default function MyPage6() {
     router.push({ pathname: "/write6", params: { id: String(post.id) } });
   };
 
-  const statusLabel = (s: string) => {
-    if (s === "published") return "게시내역";
-    if (s === "closed") return "마감내역";
-    return s;
-  };
-
   const renderItem = ({ item }: { item: Post }) => (
     <View
       style={{
@@ -169,7 +164,7 @@ export default function MyPage6() {
         {item.content}
       </Text>
       <Text style={{ fontSize: 12, color: colors.text }}>
-        상태: {statusLabel(item.status)}
+        {formatPostDateTime(item.created_at)}
       </Text>
 
       <View style={{ flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" }}>

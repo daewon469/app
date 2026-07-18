@@ -17,6 +17,10 @@ import TopBar from "../components/ui/Topbar";
 import { AppMeta, Notify } from "../lib/api";
 import { store } from "../store";
 import { compareVersions } from "../utils/compareVersions";
+import {
+  getNotificationPostId,
+  markNotificationPostNavigationPending,
+} from "../utils/notificationNavigation";
 import { isPushNotificationsSupported, setBadgeCountSafe } from "../utils/notifications";
 
 function disableFontScalingGlobally() {
@@ -55,25 +59,41 @@ export default function RootLayout() {
 
   const didShowReferralUnreadAlertsRef = useRef(false);
   const didCheckForceUpdateRef = useRef(false);
+  const [loaded] = useFonts({
+    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    PlusFont1: require("../assets/fonts/BMHANNAPro.ttf"),
+  });
 
   useEffect(() => {
-    if (!isPushNotificationsSupported) return;
+    if (!loaded || !isPushNotificationsSupported) return;
+
+    let cancelled = false;
+
+    const navigateToNotificationPost = (data: unknown) => {
+      const postId = getNotificationPostId(data);
+      if (!postId) return false;
+
+      markNotificationPostNavigationPending();
+      router.push({
+        pathname: "/[id]",
+        params: {
+          id: postId,
+          fromPush: "1",
+        },
+      });
+      return true;
+    };
 
     (async () => {
       const lastResponse =
         await Notifications.getLastNotificationResponseAsync();
+      if (cancelled) return;
 
       const data =
         lastResponse?.notification?.request?.content?.data;
 
-      if (data?.post_id) {
-        router.push({
-          pathname: "/[id]",
-          params: {
-            id: String(data.post_id),
-            fromPush: "1",
-          },
-        });
+      if (navigateToNotificationPost(data)) {
+        await Notifications.clearLastNotificationResponseAsync();
       }
     })();
 
@@ -95,31 +115,20 @@ export default function RootLayout() {
     });
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
+      async (response) => {
         const data = response.notification.request.content.data;
-
-        if (data?.post_id) {
-          router.push({
-            pathname: "/[id]",
-            params: {
-              id: String(data.post_id),
-              fromPush: "1",
-            },
-          });
+        if (navigateToNotificationPost(data)) {
+          await Notifications.clearLastNotificationResponseAsync();
         }
       }
     );
 
     return () => {
+      cancelled = true;
       subscription.remove();
       responseSubscription.remove();
     };
-  }, []);
-
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    PlusFont1: require("../assets/fonts/BMHANNAPro.ttf"),
-  });
+  }, [loaded]);
 
   useEffect(() => {
     if (!loaded) return;

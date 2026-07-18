@@ -86,8 +86,7 @@ export default function PostcardSSlider({
             <PostCardS
               post={item}
               height={cardHeight}
-              borderRadius={fullWidth ? 0 : 12}
-              edgeToEdge={fullWidth}
+              borderRadius={12}
             />
           </View>
         )}
@@ -99,7 +98,7 @@ export default function PostcardSSlider({
             flexDirection: "row",
             justifyContent: "center",
             alignItems: "center",
-            marginTop: 8,
+            marginTop: 4,
           }}
         >
           {posts.map((p, i) => (
@@ -110,7 +109,7 @@ export default function PostcardSSlider({
                 height: 6,
                 borderRadius: 3,
                 marginHorizontal: 3,
-                backgroundColor: i === activeIndex ? "#2F6BFF" : "#C5C5C5",
+                backgroundColor: i === activeIndex ? "#4A6CF7" : "#C5C5C5",
               }}
             />
           ))}

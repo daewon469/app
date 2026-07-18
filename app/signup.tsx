@@ -30,6 +30,9 @@ const mobile = (value: string) => {
 };
 
 const phoneDigits = (value: string) => (value || "").replace(/[^0-9]/g, "");
+const inputFontSizeStyle = (value: string | null | undefined) => ({
+  fontSize: String(value ?? "").trim() ? 14 : 13,
+});
 
 export default function SignupScreen() {
   const [password, setPassword] = useState("");
@@ -380,7 +383,13 @@ export default function SignupScreen() {
                 setUserName(v);
                 setUsernameAvailable(null);
               }}
-              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(username) }}
+              style={{
+                flex: 1,
+                padding: 12,
+                color: colors.text,
+                ...inputFontWeightStyle(username),
+                ...inputFontSizeStyle(username),
+              }}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -414,7 +423,13 @@ export default function SignupScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
-              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(password) }}
+              style={{
+                flex: 1,
+                padding: 12,
+                color: colors.text,
+                ...inputFontWeightStyle(password),
+                ...inputFontSizeStyle(password),
+              }}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -439,7 +454,13 @@ export default function SignupScreen() {
               value={password_confirm}
               onChangeText={setPassword_confirm}
               secureTextEntry={!showPasswordConfirm}
-              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(password_confirm) }}
+              style={{
+                flex: 1,
+                padding: 12,
+                color: colors.text,
+                ...inputFontWeightStyle(password_confirm),
+                ...inputFontSizeStyle(password_confirm),
+              }}
               autoCapitalize="none"
               autoCorrect={false}
             />
@@ -462,7 +483,7 @@ export default function SignupScreen() {
             placeholderTextColor="#666"
             value={name}
             onChangeText={setName}
-            style={[inputStyle, inputFontWeightStyle(name)]}
+            style={[inputStyle, inputFontWeightStyle(name), inputFontSizeStyle(name)]}
           />
         </View>
 
@@ -481,7 +502,13 @@ export default function SignupScreen() {
                 setPhoneSent(false);
                 setPhoneVerified(false);
               }}
-              style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(phoneNumber) }}
+              style={{
+                flex: 1,
+                padding: 12,
+                color: colors.text,
+                ...inputFontWeightStyle(phoneNumber),
+                ...inputFontSizeStyle(phoneNumber),
+              }}
               keyboardType="phone-pad"
             />
             {canPhoneVerify && (
@@ -513,7 +540,13 @@ export default function SignupScreen() {
                 placeholderTextColor="#666"
                 value={phoneCode}
                 onChangeText={(v) => setPhoneCode(v.replace(/[^0-9]/g, "").slice(0, 6))}
-                style={{ flex: 1, padding: 12, color: colors.text, ...inputFontWeightStyle(phoneCode) }}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  color: colors.text,
+                  ...inputFontWeightStyle(phoneCode),
+                  ...inputFontSizeStyle(phoneCode),
+                }}
                 keyboardType="number-pad"
                 maxLength={6}
               />
@@ -544,7 +577,7 @@ export default function SignupScreen() {
               placeholder="지역 선택"
               placeholderTextColor="#666"
               editable={false}
-              style={[inputStyle, inputFontWeightStyle(region)]}
+              style={[inputStyle, inputFontWeightStyle(region), inputFontSizeStyle(region)]}
               pointerEvents="none"
             />
           </Pressable>
@@ -558,7 +591,11 @@ export default function SignupScreen() {
               placeholderTextColor="#666"
               value={referralCode}
               onChangeText={setReferralCode}
-              style={[inputStyle, inputFontWeightStyle(referralCode)]}
+              style={[
+                inputStyle,
+                inputFontWeightStyle(referralCode),
+                inputFontSizeStyle(referralCode),
+              ]}
               autoCapitalize="none"
             />
           </View>

@@ -1660,7 +1660,7 @@ ${INSTALL_URL}
             Alert.alert("알림", "로그인이 필요합니다.");
           }}
         >
-          <PostcardSSlider posts={postcardS} autoPlayMs={2000} fullWidth />
+          <PostcardSSlider posts={postcardS} autoPlayMs={3500} fullWidth />
         </GuardedTouch>
       ) : null}
 

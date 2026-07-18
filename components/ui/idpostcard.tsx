@@ -13,6 +13,7 @@ import {
   Modal,
   Pressable,
   SafeAreaView,
+  Share,
   Text as RNText,
   View,
 } from "react-native";
@@ -181,6 +182,19 @@ export default function Postcard_detail({ post }: { post: Post }) {
       return;
     }
     await Linking.openURL(url);
+  };
+
+  const sharePost = async () => {
+    const url = `https://www.bunyangpro.net/${post.id}`;
+    try {
+      await Share.share({
+        title: post.title,
+        message: `${post.title}\n${url}`,
+        url,
+      });
+    } catch {
+      alert("공유를 실행할 수 없습니다.");
+    }
   };
 
   useEffect(() => {
@@ -777,7 +791,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
         </GestureHandlerRootView>
       </Modal>
 
-      {/* 스크롤해도 사라지지 않는 하단 전화/문자 버튼 */}
+      {/* 스크롤해도 사라지지 않는 하단 전화/문자/공유 버튼 */}
       <Animated.View
         pointerEvents={showActionBar ? "auto" : "none"}
         style={{
@@ -823,7 +837,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
               disabled={!contactDigits}
               style={({ pressed }) => ({
                 flex: 1,
-                marginRight: 8,
+                marginRight: 6,
                 height: 40,
                 borderRadius: 10,
                 borderWidth: 1,
@@ -844,6 +858,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
               disabled={!contactDigits}
               style={({ pressed }) => ({
                 flex: 1,
+                marginRight: 6,
                 height: 40,
                 borderRadius: 10,
                 borderWidth: 1,
@@ -856,6 +871,25 @@ export default function Postcard_detail({ post }: { post: Post }) {
             >
               <Text style={{ color: "white", fontWeight: "700", letterSpacing: 2, fontSize: 16 }}>
                 문  자
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={sharePost}
+              style={({ pressed }) => ({
+                flex: 1,
+                height: 40,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#000",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#6A1B9A",
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Text style={{ color: "white", fontWeight: "700", letterSpacing: 2, fontSize: 16 }}>
+                공  유
               </Text>
             </Pressable>
           </View>

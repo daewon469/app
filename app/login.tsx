@@ -26,6 +26,10 @@ const TextInput = (props: React.ComponentProps<typeof RNTextInput>) => (
   <RNTextInput {...props} allowFontScaling={false} />
 );
 
+const inputFontSizeStyle = (value: string | null | undefined) => ({
+  fontSize: String(value ?? "").trim() ? 14 : 13,
+});
+
 export default function LoginScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -109,6 +113,7 @@ export default function LoginScreen() {
               padding: 12,
               backgroundColor: colors.card,
               color: colors.text,
+              ...inputFontSizeStyle(username),
             }}
           />
         </View>
@@ -131,7 +136,12 @@ export default function LoginScreen() {
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPassword}
-              style={{ flex: 1, padding: 12, color: colors.text }}
+              style={{
+                flex: 1,
+                padding: 12,
+                color: colors.text,
+                ...inputFontSizeStyle(password),
+              }}
               autoCapitalize="none"
               autoCorrect={false}
             />
