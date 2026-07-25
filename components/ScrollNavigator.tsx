@@ -100,7 +100,8 @@ export default function ScrollNavigator({
 
     // early return은 모든 hooks 호출 후에
     const isScrollable = contentHeight > layoutHeight + 20;
-    if (!isScrollable) return null;
+    const showFabColumn = Boolean(aboveTopButtons) || showButtons;
+    if (!isScrollable && !showFabColumn) return null;
 
     return (
         <View
@@ -115,65 +116,73 @@ export default function ScrollNavigator({
             ]}
         >
             {/* ✅ 트랙: 상/하단 툴바 사이를 "꽉" 채움 */}
-            <View
-                pointerEvents="none"
-                style={[
-                    styles.track,
-                    { width: barWidth },
-                ]}
-                onLayout={(e) => setTrackHeight(e.nativeEvent.layout.height)}
-            >
-                {/* 트랙 배경만 반투명(thumb는 영향받지 않게) */}
+            {isScrollable ? (
                 <View
                     pointerEvents="none"
                     style={[
-                        StyleSheet.absoluteFill,
-                        {
-                            backgroundColor: `rgba(255,255,255,${trackOpacity})`,
-                            borderRadius: 999,
-                        },
+                        styles.track,
+                        { width: barWidth },
                     ]}
-                />
-                <Animated.View
-                    style={[
-                        styles.thumb,
-                        {
-                            width: barWidth,
-                            height: thumbHeight,
-                            opacity: thumbOpacity,
-                            backgroundColor: thumbColor,
-                            transform: [{ translateY }],
-                        },
-                    ]}
-                />
-            </View>
+                    onLayout={(e) => setTrackHeight(e.nativeEvent.layout.height)}
+                >
+                    {/* 트랙 배경만 반투명(thumb는 영향받지 않게) */}
+                    <View
+                        pointerEvents="none"
+                        style={[
+                            StyleSheet.absoluteFill,
+                            {
+                                backgroundColor: `rgba(255,255,255,${trackOpacity})`,
+                                borderRadius: 999,
+                            },
+                        ]}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.thumb,
+                            {
+                                width: barWidth,
+                                height: thumbHeight,
+                                opacity: thumbOpacity,
+                                backgroundColor: thumbColor,
+                                transform: [{ translateY }],
+                            },
+                        ]}
+                    />
+                </View>
+            ) : (
+                <View style={{ flex: 1 }} />
+            )}
 
             {/* ✅ 버튼: 우측하단에 모아서 배치 + 더 투명 */}
-            {showButtons && (
+            {showFabColumn && (
                 <View style={styles.buttons} pointerEvents="box-none">
                     {aboveTopButtons ? (
                         <>
                             {aboveTopButtons}
-                            <View style={{ height: 10 }} />
+                            {showButtons && isScrollable ? <View style={{ height: 10 }} /> : null}
                         </>
                     ) : null}
-                    <Pressable
-                        onPress={onTop}
-                        style={[styles.fab, { opacity: buttonOpacity }]}
-                        hitSlop={10}
-                    >
-                        <Ionicons name="chevron-up" size={20} color="#111" />
-                    </Pressable>
+                    {showButtons && isScrollable ? (
+                        <>
+                            <Pressable
+                                onPress={onTop}
+                                style={[styles.fab, { opacity: buttonOpacity }]}
+                                hitSlop={10}
+                            >
+                                <Ionicons name="chevron-up" size={20} color="#111" />
+                            </Pressable>
 
-                    <View style={{ height: 10 }} />
+                            <View style={{ height: 10 }} />
 
-                    <Pressable
-                        onPress={onBottom}
-                        style={[styles.fab, { opacity: buttonOpacity }]}
-                        hitSlop={10}
-                    >
-                        <Ionicons name="chevron-down" size={20} color="#111" />
-                    </Pressable>
+                            <Pressable
+                                onPress={onBottom}
+                                style={[styles.fab, { opacity: buttonOpacity }]}
+                                hitSlop={10}
+                            >
+                                <Ionicons name="chevron-down" size={20} color="#111" />
+                            </Pressable>
+                        </>
+                    ) : null}
                 </View>
             )}
         </View>

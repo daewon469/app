@@ -682,6 +682,15 @@ export type UIConfigResponse = {
       height?: number;
       resize_mode?: "contain" | "cover" | "stretch";
     };
+    /** 아이폰 전용 팝업 (App Store 심사용 등) */
+    ios_popup?: {
+      enabled: boolean;
+      image_url: string | null;
+      link_url: string | null;
+      width_percent?: number;
+      height?: number;
+      resize_mode?: "contain" | "cover" | "stretch";
+    };
     // 제목검색 화면 추천 현장(오너 관리)
     title_search?: {
       enabled: boolean;
@@ -704,6 +713,7 @@ export const UIConfig = {
             banner: { enabled: true, interval_posts: 10, items: [], height: 110, resize_mode: "contain" },
             top_banner: { enabled: true, items: [], height: 70, resize_mode: "contain" },
             popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
+            ios_popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
             title_search: { enabled: true, recommended_post_ids: [] },
             slide_posts: { post_ids: [] },
           },
@@ -717,6 +727,7 @@ export const UIConfig = {
           banner: { enabled: true, interval_posts: 10, items: [], height: 110, resize_mode: "contain" },
           top_banner: { enabled: true, items: [], height: 70, resize_mode: "contain" },
           popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
+          ios_popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
           title_search: { enabled: true, recommended_post_ids: [] },
           slide_posts: { post_ids: [] },
         },

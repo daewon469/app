@@ -34,6 +34,45 @@ const Text = (props: ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
+const NAVY = "#0B1B3A";
+
+/** 하단 액션 버튼 텍스트용 네이비 테두리 */
+function OutlinedActionText({
+  text,
+  fontSize = 18,
+  fontWeight = "700",
+  letterSpacing = 2,
+}: {
+  text: string;
+  fontSize?: number;
+  fontWeight?: "700" | "800";
+  letterSpacing?: number;
+}) {
+  const base = {
+    fontSize,
+    fontWeight,
+    letterSpacing,
+    color: "#fff",
+    includeFontPadding: false as const,
+  };
+  const outline = {
+    ...base,
+    position: "absolute" as const,
+    left: 0,
+    top: 0,
+    color: NAVY,
+  };
+  return (
+    <View style={{ position: "relative" }}>
+      <Text style={[outline, { transform: [{ translateX: -1 }, { translateY: 0 }] }]}>{text}</Text>
+      <Text style={[outline, { transform: [{ translateX: 1 }, { translateY: 0 }] }]}>{text}</Text>
+      <Text style={[outline, { transform: [{ translateX: 0 }, { translateY: -1 }] }]}>{text}</Text>
+      <Text style={[outline, { transform: [{ translateX: 0 }, { translateY: 1 }] }]}>{text}</Text>
+      <Text style={base}>{text}</Text>
+    </View>
+  );
+}
+
 const screenWidth = Dimensions.get("window").width;
 
 export default function Postcard_detail({ post }: { post: Post }) {
@@ -727,71 +766,62 @@ export default function Postcard_detail({ post }: { post: Post }) {
         thumbColor="#FF0000"
         barWidth={4}
         showButtons={true}
+        aboveTopButtons={
+          <>
+            <Heart postId={post.id} postLiked={post.liked} size={28} />
+            <View style={{ height: 10 }} />
+            <Pressable
+              onPress={async () => {
+                setAiOpen(true);
+                setAiLoading(true);
+                setAiError(null);
+                setAiText(null);
+                const res = await requestSiteAnalysis(postToSiteAnalysisPayload(post));
+                setAiLoading(false);
+                if (!res.ok) {
+                  setAiError(res.error);
+                  return;
+                }
+                setAiText(res.analysis);
+              }}
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                backgroundColor: "#38BDF8",
+                borderWidth: 1,
+                borderColor: "#000",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              hitSlop={8}
+            >
+              <Text
+                style={{
+                  color: "#fff",
+                  fontWeight: "900",
+                  fontSize: 16,
+                  lineHeight: 17,
+                  includeFontPadding: false,
+                }}
+              >
+                AI
+              </Text>
+              <Text
+                style={{
+                  color: "#F97316",
+                  fontWeight: "900",
+                  fontSize: 13,
+                  lineHeight: 14,
+                  includeFontPadding: false,
+                }}
+              >
+                분석
+              </Text>
+            </Pressable>
+          </>
+        }
       />
-
-      {/* 업종/지역 카드 위에 겹치며, 스크롤해도 유지 */}
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: "absolute",
-          right: 14,
-          top: 225,
-          zIndex: 60,
-          alignItems: "center",
-        }}
-      >
-        <Heart postId={post.id} postLiked={post.liked} size={28} />
-        <View style={{ height: 10 }} />
-        <Pressable
-          onPress={async () => {
-            setAiOpen(true);
-            setAiLoading(true);
-            setAiError(null);
-            setAiText(null);
-            const res = await requestSiteAnalysis(postToSiteAnalysisPayload(post));
-            setAiLoading(false);
-            if (!res.ok) {
-              setAiError(res.error);
-              return;
-            }
-            setAiText(res.analysis);
-          }}
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: 23,
-            backgroundColor: "#38BDF8",
-            borderWidth: 1,
-            borderColor: "#000",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          hitSlop={8}
-        >
-          <Text
-            style={{
-              color: "#fff",
-              fontWeight: "900",
-              fontSize: 13,
-              lineHeight: 14,
-              includeFontPadding: false,
-            }}
-          >
-            AI
-          </Text>
-          <Text
-            style={{
-              color: "#fff",
-              fontWeight: "900",
-              fontSize: 13,
-              lineHeight: 14,
-              includeFontPadding: false,
-            }}
-          >
-            분석
-          </Text>
-        </Pressable>
-      </View>
 
       <Modal
         visible={aiOpen}
@@ -804,13 +834,17 @@ export default function Postcard_detail({ post }: { post: Post }) {
             flex: 1,
             backgroundColor: "rgba(0,0,0,0.45)",
             justifyContent: "center",
-            padding: 20,
+            alignItems: "center",
+            // customsite.tsx와 동일한 바깥 여백(좌우 16)
+            paddingHorizontal: 16,
+            paddingVertical: 16,
           }}
         >
           <View
             style={{
-              maxHeight: Dimensions.get("window").height * 0.85,
+              maxHeight: "85%",
               width: "100%",
+              maxWidth: 520,
               borderRadius: 16,
               borderWidth: 1,
               borderColor: "#000",
@@ -827,9 +861,12 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 paddingVertical: 14,
                 borderBottomWidth: 1,
                 borderBottomColor: "rgba(0,0,0,0.08)",
+                backgroundColor: "#fff",
               }}
             >
-              <Text style={{ fontSize: 17, fontWeight: "800" }}>AI 현장분석</Text>
+              <Text style={{ fontSize: 17, fontWeight: "800", color: "#0B1B3A" }}>
+                AI 현장분석
+              </Text>
               <Pressable onPress={() => setAiOpen(false)} hitSlop={8}>
                 <Text style={{ color: "#666", fontWeight: "600" }}>닫기</Text>
               </Pressable>
@@ -842,6 +879,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                   alignItems: "center",
                   justifyContent: "center",
                   padding: 24,
+                  backgroundColor: "#fff",
                 }}
               >
                 <ActivityIndicator size="large" color="#38BDF8" />
@@ -860,6 +898,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                   paddingHorizontal: 12,
                   paddingTop: 6,
                   paddingBottom: 6,
+                  backgroundColor: "#fff",
                 }}
                 showsVerticalScrollIndicator
                 nestedScrollEnabled
@@ -867,7 +906,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
               >
                 {aiError ? <Text style={{ color: "#c62828" }}>{aiError}</Text> : null}
                 {aiText && parsedAi && parsedAi.sections.length === 0 ? (
-                  <Text style={{ fontSize: 14, lineHeight: 24, color: "#111" }}>{aiText}</Text>
+                  <Text style={{ fontSize: 16, lineHeight: 26, color: "#111" }}>{aiText}</Text>
                 ) : null}
                 {parsedAi && parsedAi.sections.length > 0 ? (
                   <View style={{ gap: 8 }}>
@@ -883,14 +922,14 @@ export default function Postcard_detail({ post }: { post: Post }) {
                           paddingVertical: 10,
                         }}
                       >
-                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#0284c7" }}>
+                        <Text style={{ fontSize: 17, fontWeight: "800", color: "#0284c7" }}>
                           {section.heading}
                         </Text>
                         <Text
                           style={{
                             marginTop: 6,
-                            fontSize: 14,
-                            lineHeight: 22,
+                            fontSize: 16,
+                            lineHeight: 24,
                             color: "#222",
                           }}
                         >
@@ -1015,9 +1054,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text style={{ color: "white", fontWeight: "800", letterSpacing: 2, fontSize: 16 }}>
-                수  정
-              </Text>
+              <OutlinedActionText text="수  정" fontWeight="800" />
             </Pressable>
           ) : null}
 
@@ -1038,9 +1075,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text style={{ color: "white", fontWeight: "700", letterSpacing: 2, fontSize: 16 }}>
-                전  화
-              </Text>
+              <OutlinedActionText text="전  화" />
             </Pressable>
 
             <Pressable
@@ -1059,9 +1094,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text style={{ color: "white", fontWeight: "700", letterSpacing: 2, fontSize: 16 }}>
-                문  자
-              </Text>
+              <OutlinedActionText text="문  자" />
             </Pressable>
 
             <Pressable
@@ -1078,9 +1111,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 opacity: pressed ? 0.85 : 1,
               })}
             >
-              <Text style={{ color: "white", fontWeight: "700", letterSpacing: 2, fontSize: 16 }}>
-                공  유
-              </Text>
+              <OutlinedActionText text="공  유" />
             </Pressable>
           </View>
         </View>

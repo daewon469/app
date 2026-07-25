@@ -123,7 +123,7 @@ const formatAmountInput = (value: string) => {
 };
 
 // 이미지 미선택 시 기본 이미지
-const DEFAULT_IMAGE = require("../assets/images/Imagedefault.png");
+const DEFAULT_IMAGE = require("../assets/images/default0725.png");
 
 export default function PostWrite() {
   const dispatch = useDispatch();

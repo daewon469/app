@@ -9,8 +9,9 @@ import Heart from "./heart";
 /** 웹과 동일 — 1:1일 때 미사용, 레거시 참조용 */
 export const LIST_CARD_HEIGHT_TYPE_S = 364;
 
-/** 검정 매쉬 고정 투명도 */
+/** 검정 매쉬·테두리 고정 투명도 */
 const MESH_OPACITY = 0.5;
+const MESH_COLOR = `rgba(0,0,0,${MESH_OPACITY})`;
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -53,7 +54,6 @@ function PostCardS({
   const imageUri = useMemo(() => resolveSlideCardImage(post), [post]);
   const industryProvinceCity = `${post.job_industry ?? ""}/${formatProvinceCity(post.province, post.city)}`;
   const resolvedRadius = edgeToEdge ? 0 : borderRadius;
-  const meshBg = `rgba(0,0,0,${MESH_OPACITY})`;
 
   return (
     <View
@@ -92,10 +92,11 @@ function PostCardS({
               right: 0,
               zIndex: 1,
               paddingHorizontal: 8,
-              paddingVertical: 6,
-              backgroundColor: meshBg,
+              paddingTop: 2,
+              paddingBottom: 3,
+              backgroundColor: MESH_COLOR,
               borderBottomWidth: 1,
-              borderBottomColor: "#000",
+              borderBottomColor: MESH_COLOR,
             }}
           >
             <Text
@@ -103,7 +104,7 @@ function PostCardS({
               style={{
                 fontSize: 17,
                 fontWeight: "700",
-                lineHeight: 20,
+                lineHeight: 19,
                 color: "#fff",
               }}
             >
@@ -114,7 +115,7 @@ function PostCardS({
               style={{
                 fontSize: 13,
                 fontWeight: "700",
-                lineHeight: 16,
+                lineHeight: 15,
                 color: "#fff",
               }}
             >
@@ -131,10 +132,11 @@ function PostCardS({
               bottom: 0,
               zIndex: 1,
               paddingHorizontal: 8,
-              paddingVertical: 6,
-              backgroundColor: meshBg,
+              paddingTop: 3,
+              paddingBottom: 2,
+              backgroundColor: MESH_COLOR,
               borderTopWidth: 1,
-              borderTopColor: "#000",
+              borderTopColor: MESH_COLOR,
             }}
           >
             <Text
@@ -142,7 +144,7 @@ function PostCardS({
               style={{
                 fontSize: 15,
                 fontWeight: "700",
-                lineHeight: 18,
+                lineHeight: 17,
                 color: "#fff",
               }}
             >
@@ -153,7 +155,7 @@ function PostCardS({
               style={{
                 fontSize: 15,
                 fontWeight: "700",
-                lineHeight: 18,
+                lineHeight: 17,
                 color: "#fff",
               }}
             >

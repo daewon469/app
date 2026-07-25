@@ -22,7 +22,7 @@ const TextInput = ({
   />
 );
 
-export default function PopupAdmin() {
+export default function IosPopupAdmin() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const loadingRef = useRef(false);
@@ -58,18 +58,19 @@ export default function PopupAdmin() {
         Alert.alert("오류", "팝업 설정을 불러올 수 없습니다.");
         return;
       }
-      setEnabled(!!res.config.popup.enabled);
-      const img = res.config.popup.image_url;
+      const popup = (res.config as any).ios_popup ?? res.config.popup;
+      setEnabled(!!popup.enabled);
+      const img = popup.image_url;
       setImageUrl(typeof img === "string" && img.trim() ? img.trim() : null);
-      setLinkUrl(res.config.popup.link_url ?? "");
-      setWidthPercentText(String((res.config.popup as any)?.width_percent ?? 92));
-      setHeightText(String((res.config.popup as any)?.height ?? 360));
+      setLinkUrl(popup.link_url ?? "");
+      setWidthPercentText(String(popup?.width_percent ?? 92));
+      setHeightText(String(popup?.height ?? 360));
       setResizeMode((() => {
-        const rm = String((res.config.popup as any)?.resize_mode ?? "contain");
+        const rm = String(popup?.resize_mode ?? "contain");
         return (rm === "cover" || rm === "stretch" ? rm : "contain") as "contain" | "cover" | "stretch";
       })());
     } catch (e) {
-      Alert.alert("오류", "팝업 설정을 불러올 수 없습니다.");
+      Alert.alert("오류", "아이폰 팝업 설정을 불러올 수 없습니다.");
     } finally {
       setLoading(false);
       loadingRef.current = false;
@@ -85,7 +86,7 @@ export default function PopupAdmin() {
     const upload = await fetch(`${API_URL}/upload/base64`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: `popup_${Date.now()}.png`, base64: b64 }),
+      body: JSON.stringify({ filename: `ios_popup_${Date.now()}.png`, base64: b64 }),
     });
     const data = await upload.json();
     const url = (data as any)?.url;
@@ -126,7 +127,7 @@ export default function PopupAdmin() {
       const current = await UIConfig.get();
       const nextConfig = {
         ...current.config,
-        popup: {
+        ios_popup: {
           enabled: !!enabled,
           image_url: imageUrl ?? null,
           link_url: linkUrlNormalized || null,
@@ -140,7 +141,7 @@ export default function PopupAdmin() {
         Alert.alert("오류", "저장에 실패했습니다.");
         return;
       }
-      Alert.alert("저장 완료", "팝업 설정이 저장되었습니다.");
+      Alert.alert("저장 완료", "아이폰 팝업 설정이 저장되었습니다.");
       router.back();
     } catch (e) {
       Alert.alert("오류", "저장에 실패했습니다.");
@@ -161,9 +162,9 @@ export default function PopupAdmin() {
             padding: 14,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>팝업창 관리</Text>
+          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>아이폰 팝업창 관리</Text>
           <Text style={{ color: "#666", marginBottom: 10, fontSize: 12 }}>
-            안드로이드·웹에 적용됩니다. 아이폰은「아이폰 팝업창 관리」를 사용하세요.
+            App Store 심사용. 아이폰 앱에만 적용됩니다. (안드로이드·웹과 별도)
           </Text>
 
           <Pressable

@@ -144,6 +144,10 @@ export default function SlidePostsAdmin() {
         Alert.alert("알림", "이미 추가된 게시글입니다.");
         return;
       }
+      if (slideIds.length >= 10) {
+        Alert.alert("알림", "사용자 선택 현장은 최대 10개까지입니다.");
+        return;
+      }
       setSlidePosts((prev) => [...prev, post]);
     },
     [slideIds],
@@ -170,37 +174,31 @@ export default function SlidePostsAdmin() {
     if (saving) return;
     setSaving(true);
     try {
-      const prevIds = initialIdsRef.current;
-      const nextIds = slideIds;
-      const removed = prevIds.filter((id) => !nextIds.includes(id));
-
-      for (const id of removed) {
-        await Posts.update(id, { card_type: 1 });
-      }
-      for (const id of nextIds) {
-        await Posts.update(id, { card_type: CARD_TYPE_S });
-      }
-
+      const nextIds = slideIds.slice(0, 10);
       const current = await UIConfig.get();
       const nextConfig = {
         ...current.config,
         slide_posts: { post_ids: nextIds },
       } as any;
 
+      // 서버가 핀(N)+최신(10-N)으로 card_type=5를 자동 동기화
       const res = await UIConfig.update(nextConfig);
       if (res.status !== 0) {
         Alert.alert("오류", "저장에 실패했습니다.");
         return;
       }
       initialIdsRef.current = nextIds;
-      Alert.alert("저장 완료", "슬라이드 현장이 저장되었습니다.");
+      Alert.alert(
+        "저장 완료",
+        `슬라이드 현장이 저장되었습니다.\n(선택 ${nextIds.length} + 최신 ${Math.max(0, 10 - nextIds.length)} = 5유형 10개)`,
+      );
       router.back();
     } catch {
       Alert.alert("오류", "저장에 실패했습니다.");
     } finally {
       setSaving(false);
     }
-  }, [saving, slideIds]);
+  }, [saving, slideIds, router]);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -215,8 +213,12 @@ export default function SlidePostsAdmin() {
           }}
         >
           <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>슬라이드 현장 관리</Text>
-          <Text style={{ marginBottom: 10, color: "#666", fontWeight: "700", lineHeight: 20 }}>
-            선택한 구인글은 첫화면 슬라이드에 노출되며, 저장 시 card_type이 5로 설정됩니다.
+          <Text style={{ marginBottom: 6, color: "#666", fontWeight: "700", lineHeight: 20 }}>
+            선택한 현장은 슬라이드 앞에 고정됩니다(최대 10개). 부족분은 서버가 최신 구인글로
+            card_type=5를 자동 채워 총 10개를 유지합니다.
+          </Text>
+          <Text style={{ marginBottom: 10, color: "#0B1B3A", fontWeight: "900" }}>
+            사용자 선택 {slideIds.length}/10 · 자동 최신 {Math.max(0, 10 - slideIds.length)}개
           </Text>
 
           <Text style={{ fontWeight: "900", marginBottom: 6 }}>제목 검색으로 추가</Text>

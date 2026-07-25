@@ -482,9 +482,18 @@ export default function Postlist() {
       height?: number;
       resize_mode?: "contain" | "cover" | "stretch";
     };
+    ios_popup?: {
+      enabled: boolean;
+      image_url: string | null;
+      link_url: string | null;
+      width_percent?: number;
+      height?: number;
+      resize_mode?: "contain" | "cover" | "stretch";
+    };
   } | null>(null);
   const [uiConfigLoaded, setUiConfigLoaded] = useState(false);
   const [uiPopupVisible, setUiPopupVisible] = useState(false);
+  const activeUiPopup = IS_IOS ? uiConfig?.ios_popup : uiConfig?.popup;
   const [referralModalVisible, setReferralModalVisible] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
@@ -884,8 +893,9 @@ ${INSTALL_URL}
   // - 팝업을 비활성(OFF)하면: 오늘 숨김 상태를 지워서, 다시 ON 했을 때 즉시 다시 뜨게 함
   // - 이미지가 바뀌면: 새로운 팝업으로 판단하여 오늘 숨김 상태를 지움
   useEffect(() => {
-    const enabled = uiConfig?.popup?.enabled;
-    const imageUrl = uiConfig?.popup?.image_url ?? null;
+    const cfg = IS_IOS ? uiConfig?.ios_popup : uiConfig?.popup;
+    const enabled = cfg?.enabled;
+    const imageUrl = cfg?.image_url ?? null;
 
     const prevEnabled = prevUiPopupEnabledRef.current;
     const prevImageUrl = prevUiPopupImageUrlRef.current;
@@ -930,7 +940,13 @@ ${INSTALL_URL}
         }
       })();
     }
-  }, [uiConfig?.popup?.enabled, uiConfig?.popup?.image_url]);
+  }, [
+    IS_IOS,
+    uiConfig?.popup?.enabled,
+    uiConfig?.popup?.image_url,
+    uiConfig?.ios_popup?.enabled,
+    uiConfig?.ios_popup?.image_url,
+  ]);
 
   // 팝업(관리자 설정) 노출: 로컬 기준 하루 1회
   useFocusEffect(
@@ -944,7 +960,7 @@ ${INSTALL_URL}
             setUiPopupVisible(false);
             return;
           }
-          const cfg = uiConfig?.popup;
+          const cfg = IS_IOS ? uiConfig?.ios_popup : uiConfig?.popup;
           if (!cfg?.enabled) return;
           if (!cfg?.image_url && !IS_IOS) return;
 
@@ -967,7 +983,13 @@ ${INSTALL_URL}
       return () => {
         alive = false;
       };
-    }, [uiConfig?.popup?.enabled, uiConfig?.popup?.image_url])
+    }, [
+      IS_IOS,
+      uiConfig?.popup?.enabled,
+      uiConfig?.popup?.image_url,
+      uiConfig?.ios_popup?.enabled,
+      uiConfig?.ios_popup?.image_url,
+    ])
   );
 
   const playAttendancePressEffect = useCallback(() => {
@@ -2397,7 +2419,7 @@ ${INSTALL_URL}
               width: Math.max(
                 240,
                 Math.min(
-                  Math.floor((windowWidth - 32) * (Number((uiConfig?.popup as any)?.width_percent ?? 92) / 100)),
+                  Math.floor((windowWidth - 32) * (Number(activeUiPopup?.width_percent ?? 92) / 100)),
                   windowWidth - 32
                 )
               ),
@@ -2408,10 +2430,10 @@ ${INSTALL_URL}
               borderColor: "#000",
             }}
           >
-            {uiConfig?.popup?.image_url || IS_IOS ? (
+            {activeUiPopup?.image_url || IS_IOS ? (
               <Pressable
                 onPress={async () => {
-                  const link = String(uiConfig?.popup?.link_url ?? "").trim();
+                  const link = String(activeUiPopup?.link_url ?? "").trim();
                   if (!link) return;
                   try {
                     const ok = await Linking.canOpenURL(link);
@@ -2427,17 +2449,21 @@ ${INSTALL_URL}
               >
                 <Image
                   source={
-                    uiConfig?.popup?.image_url
-                      ? { uri: String(resolveMediaUrl(uiConfig.popup.image_url) ?? uiConfig.popup.image_url) }
+                    activeUiPopup?.image_url
+                      ? {
+                          uri: String(
+                            resolveMediaUrl(activeUiPopup.image_url) ?? activeUiPopup.image_url
+                          ),
+                        }
                       : require("../assets/images/df.png")
                   }
                   style={{
                     width: "100%",
-                    height: Math.max(200, Math.min(900, Number((uiConfig?.popup as any)?.height ?? 360) || 360)),
+                    height: Math.max(200, Math.min(900, Number(activeUiPopup?.height ?? 360) || 360)),
                     backgroundColor: "#f2f2f2",
                   }}
                   resizeMode={(() => {
-                    const rm = String((uiConfig?.popup as any)?.resize_mode ?? "contain");
+                    const rm = String(activeUiPopup?.resize_mode ?? "contain");
                     return rm === "cover" || rm === "stretch" ? rm : "contain";
                   })()}
                 />
