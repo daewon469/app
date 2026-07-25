@@ -45,7 +45,7 @@ function PostcardTitleOnly({ post }: { post: Post }) {
                         <ExpoImage
                             source={thumbSource}
                             cachePolicy="memory-disk"
-                            contentFit="cover"
+                            contentFit="fill"
                             style={{
                                 width: 33,
                                 height: 33,

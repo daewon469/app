@@ -53,6 +53,7 @@ export default function MyPagePreview() {
     const referralCount = summary?.referral_count ?? 0;
     const [referralNetworkCount, setReferralNetworkCount] = useState(0);
     const [unreadNotiCount, setUnreadNotiCount] = useState(0);
+    const [inquiryUnreadCount, setInquiryUnreadCount] = useState(0);
 
     const scrollRef = useRef<any>(null);
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -155,12 +156,23 @@ export default function MyPagePreview() {
         }
     }, []);
 
+    const loadInquiryUnreadCount = useCallback(async (user: string) => {
+        try {
+            const count = await Notify.getUnreadCount(user, { post_type: 6 });
+            setInquiryUnreadCount(Number(count) || 0);
+        } catch (e) {
+            console.warn("myboard: inquiry unread count error", e);
+            setInquiryUnreadCount(0);
+        }
+    }, []);
+
     useFocusEffect(
         useCallback(() => {
             if (username) {
                 loadUnreadNotiCount(username);
+                loadInquiryUnreadCount(username);
             }
-        }, [username, loadUnreadNotiCount])
+        }, [username, loadUnreadNotiCount, loadInquiryUnreadCount])
     );
 
     const handleLogout = () => {
@@ -1389,6 +1401,11 @@ ${INSTALL_URL}
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                    문의 및 건의사항 확인
+                                   {inquiryUnreadCount > 0 ? (
+                                       <Text style={{ fontWeight: "normal", color: colors.subText }}>
+                                           {" "}({inquiryUnreadCount})
+                                       </Text>
+                                   ) : null}
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />

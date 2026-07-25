@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, type ReactNode } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 
 type Props = {
@@ -17,6 +17,8 @@ type Props = {
     thumbColor?: string;    // thumb 색상
     buttonOpacity?: number; // 버튼 투명도(더 투명하게: 0.25~0.4)
     showButtons?: boolean;  // 맨 위/아래 버튼 표시 여부
+    /** 위로가기 버튼 위에 렌더할 추가 버튼들 */
+    aboveTopButtons?: ReactNode;
 };
 
 const clamp = (v: number, min: number, max: number) =>
@@ -38,6 +40,7 @@ export default function ScrollNavigator({
     thumbColor = "#FF0000",
     buttonOpacity = 1,
     showButtons = true,
+    aboveTopButtons,
 }: Props) {
     // ✅ state로 높이 관리
     const [contentHeight, setContentHeight] = useState(0);
@@ -148,6 +151,12 @@ export default function ScrollNavigator({
             {/* ✅ 버튼: 우측하단에 모아서 배치 + 더 투명 */}
             {showButtons && (
                 <View style={styles.buttons} pointerEvents="box-none">
+                    {aboveTopButtons ? (
+                        <>
+                            {aboveTopButtons}
+                            <View style={{ height: 10 }} />
+                        </>
+                    ) : null}
                     <Pressable
                         onPress={onTop}
                         style={[styles.fab, { opacity: buttonOpacity }]}

@@ -427,7 +427,7 @@ function AdCardSlim({ item }: AdCardProps) {
       }
       activeOpacity={0.9}
     >
-      <Image source={source} style={styles.cardSlimImage} />
+      <Image source={source} style={styles.cardSlimImage} resizeMode="stretch" />
 
       <View style={styles.cardSlimContent}>
         {!!item.company_agency && (
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   },
   cardSlimImage: {
     width: "100%",
-    height: 200,   // 기존 200 → 약 70% (2/3 축소)
+    height: 200,
     backgroundColor: "#DDD",
   },
   cardSlimContent: {

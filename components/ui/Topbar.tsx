@@ -140,7 +140,7 @@ export default function TopBar() {
               <View style={{ height: TAB_ICON_BOX_HEIGHT, justifyContent: "center" }}>
                 <Ionicons name="megaphone" size={TAB_ICON_SIZE} color="white" />
               </View>
-              <Text style={tabLabelStyle}>광고</Text>
+              <Text style={tabLabelStyle}>광고프로</Text>
             </Pressable>
           ) : (
             <Pressable

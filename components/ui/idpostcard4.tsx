@@ -610,33 +610,20 @@ export default function IdPostCard4({ post }: Props) {
   );
 }
 function DynamicImage({ uri }: { uri: string }) {
-  const [height, setHeight] = useState(200);
-
-  useEffect(() => {
-    Image.getSize(
-      uri,
-      (width, height) => {
-        const screenWidth = Dimensions.get("window").width;
-        const cardHorizontalMargin = 10 * 2; // Card marginHorizontal
-        const cardWidth = screenWidth - cardHorizontalMargin;
-
-        const scale = cardWidth / width;
-        setHeight(height * scale);
-      },
-      () => {
-        // 실패 시 fallback
-        setHeight(200);
-      }
-    );
-  }, [uri]);
+  // 이전 상세 이미지 높이감(가로 대비 약 8:5) + 여백 없이 꽉 채움
+  const screenWidth = Dimensions.get("window").width;
+  const cardHorizontalMargin = 10 * 2;
+  const cardWidth = screenWidth - cardHorizontalMargin;
+  const height = Math.round((cardWidth * 5) / 8);
 
   return (
     <Image
       source={{ uri }}
-      resizeMode="cover"
+      resizeMode="stretch"
       style={{
         width: "100%",
         height,
+        backgroundColor: "#f2f2f2",
       }}
     />
   );

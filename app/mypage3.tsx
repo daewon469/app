@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ScrollNavigator from "../components/ScrollNavigator";
-import { Auth, Post, Posts, StatusType } from "../lib/api";
+import { Post, Posts, StatusType } from "../lib/api";
 import { formatPostDateTime } from "../utils/dateFormat";
 import { getSession } from "../utils/session";
 
@@ -35,8 +35,6 @@ export default function MyPage() {
   };
 
   const [me, setMe] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [actorIsOwner, setActorIsOwner] = useState(false);
   const [tab, setTab] = useState<(StatusType | "all")>("all");
   const [items, setItems] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -65,24 +63,6 @@ export default function MyPage() {
       setMe(s.username);
     })();
   }, []);
-
-  useEffect(() => {
-    (async () => {
-      if (!me) {
-        setIsAdmin(false);
-        setActorIsOwner(false);
-        return;
-      }
-      try {
-        const res = await Auth.getMyPageSummary(me);
-        setIsAdmin(res.status === 0 && !!res.admin_acknowledged);
-        setActorIsOwner(res.status === 0 && !!res.is_owner);
-      } catch {
-        setIsAdmin(false);
-        setActorIsOwner(false);
-      }
-    })();
-  }, [me]);
 
 const fetchList = useCallback(
   async (reset = false) => {
@@ -205,12 +185,7 @@ const fetchList = useCallback(
     ]);
   };
 
-  const renderItem = ({ item }: { item: Post }) => {
-    const ownerFromItem = item.community?.is_owner;
-    const canDelete =
-      typeof ownerFromItem === "boolean" ? ownerFromItem : Boolean(item.is_owner ?? actorIsOwner);
-
-    return (
+  const renderItem = ({ item }: { item: Post }) => (
       <View
         style={{
           backgroundColor: colors.card,
@@ -261,13 +236,10 @@ const fetchList = useCallback(
             disabled={item.status === "published"}
             colors={colors}
           />
-          {canDelete && (
-            <ActionBtn label="삭제" danger onPress={() => onDelete(item)} colors={colors} />
-          )}
+          <ActionBtn label="삭제" danger onPress={() => onDelete(item)} colors={colors} />
         </View>
       </View>
-    );
-  };
+  );
 
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>

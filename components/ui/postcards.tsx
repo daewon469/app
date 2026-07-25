@@ -6,19 +6,15 @@ import { resolveMediaUrl, type Post } from "../../lib/api";
 import { formatProvinceCity, formatRoles } from "../../utils/postCardFormat";
 import Heart from "./heart";
 
-/** 웹 listCardLayout LIST_CARD_HEIGHT_TYPE_S 와 동일 */
+/** 웹과 동일 — 1:1일 때 미사용, 레거시 참조용 */
 export const LIST_CARD_HEIGHT_TYPE_S = 364;
+
+/** 검정 매쉬 고정 투명도 */
+const MESH_OPACITY = 0.5;
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
-
-/** 밝은 메쉬 위 현장 한마디 — 미지정 시 검정 */
-function resolveSlideHighlightColor(color?: string | null) {
-  const raw = String(color ?? "").trim();
-  if (!raw) return "#111";
-  return raw;
-}
 
 function resolveSlideCardImage(post: Post) {
   return resolveMediaUrl(post.image_url);
@@ -32,7 +28,7 @@ function CardImage({ uri, style }: { uri: string | null; style?: object }) {
     <ExpoImage
       source={{ uri }}
       cachePolicy="memory-disk"
-      contentFit="cover"
+      contentFit="fill"
       style={[StyleSheet.absoluteFillObject, style]}
     />
   );
@@ -41,6 +37,7 @@ function CardImage({ uri, style }: { uri: string | null; style?: object }) {
 type Props = {
   post: Post;
   showHeart?: boolean;
+  /** 지정 시 해당 높이 사용, 미지정 시 width 기준 1:1 */
   height?: number;
   borderRadius?: number;
   edgeToEdge?: boolean;
@@ -49,16 +46,23 @@ type Props = {
 function PostCardS({
   post,
   showHeart = true,
-  height = LIST_CARD_HEIGHT_TYPE_S,
+  height,
   borderRadius = 12,
   edgeToEdge = false,
 }: Props) {
   const imageUri = useMemo(() => resolveSlideCardImage(post), [post]);
   const industryProvinceCity = `${post.job_industry ?? ""}/${formatProvinceCity(post.province, post.city)}`;
   const resolvedRadius = edgeToEdge ? 0 : borderRadius;
+  const meshBg = `rgba(0,0,0,${MESH_OPACITY})`;
 
   return (
-    <View style={{ position: "relative", width: "100%", height }}>
+    <View
+      style={{
+        position: "relative",
+        width: "100%",
+        ...(height != null ? { height } : { aspectRatio: 1 }),
+      }}
+    >
       <Link href={{ pathname: "/[id]", params: { id: post.id } }} asChild>
         <Pressable
           style={{
@@ -68,7 +72,10 @@ function PostCardS({
             right: 0,
             bottom: 0,
             overflow: "hidden",
-            borderRadius: resolvedRadius,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            borderBottomLeftRadius: resolvedRadius,
+            borderBottomRightRadius: resolvedRadius,
             borderWidth: edgeToEdge ? 0 : 1,
             borderColor: "#000",
             backgroundColor: "#000",
@@ -76,7 +83,6 @@ function PostCardS({
         >
           <CardImage uri={imageUri} />
 
-          {/* 상단: 불투명 흰 배경 + 하단 검정 테두리 */}
           <View
             pointerEvents="none"
             style={{
@@ -87,38 +93,35 @@ function PostCardS({
               zIndex: 1,
               paddingHorizontal: 8,
               paddingVertical: 6,
-              backgroundColor: "#fff",
+              backgroundColor: meshBg,
               borderBottomWidth: 1,
               borderBottomColor: "#000",
             }}
           >
             <Text
-              numberOfLines={2}
+              numberOfLines={1}
               style={{
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: "700",
                 lineHeight: 20,
-                color: "#000",
+                color: "#fff",
               }}
             >
               {post.title}
             </Text>
-            {post.highlight_content ? (
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: 15,
-                  fontWeight: "700",
-                  lineHeight: 18,
-                  color: resolveSlideHighlightColor(post.highlight_color),
-                }}
-              >
-                {post.highlight_content}
-              </Text>
-            ) : null}
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 13,
+                fontWeight: "700",
+                lineHeight: 16,
+                color: "#fff",
+              }}
+            >
+              {String(post.highlight_content ?? "").trim() || " "}
+            </Text>
           </View>
 
-          {/* 하단: 불투명 흰 배경 + 상단 검정 테두리 */}
           <View
             pointerEvents="none"
             style={{
@@ -129,7 +132,7 @@ function PostCardS({
               zIndex: 1,
               paddingHorizontal: 8,
               paddingVertical: 6,
-              backgroundColor: "#fff",
+              backgroundColor: meshBg,
               borderTopWidth: 1,
               borderTopColor: "#000",
             }}
@@ -140,7 +143,7 @@ function PostCardS({
                 fontSize: 15,
                 fontWeight: "700",
                 lineHeight: 18,
-                color: "#0B57D0",
+                color: "#fff",
               }}
             >
               {industryProvinceCity}
@@ -151,7 +154,7 @@ function PostCardS({
                 fontSize: 15,
                 fontWeight: "700",
                 lineHeight: 18,
-                color: "#C62828",
+                color: "#fff",
               }}
             >
               {formatRoles(post)}

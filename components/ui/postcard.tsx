@@ -53,8 +53,15 @@ function Postcard({ post, disableImageZoom = false }: { post: Post; disableImage
               <Image
                 source={{ uri: imageUri }}
                 cachePolicy="memory-disk"
-                contentFit="cover"
-                style={{ width: 100, height: 100, borderRadius: 4, margin: 6, marginBottom: 0 }}
+                contentFit="fill"
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 4,
+                  margin: 6,
+                  marginBottom: 0,
+                  backgroundColor: "#e5e5e5",
+                }}
               />
             )}
             <View style={{ flex: 1 }}>

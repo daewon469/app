@@ -12,6 +12,7 @@ import IdPostCard6 from "../components/ui/idpostcard6";
 import IdPostCard7 from "../components/ui/idpostcard7";
 
 import { Posts, type Post } from "../lib/api";
+import * as SecureStore from "../utils/secureStorage";
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,7 +23,8 @@ export default function PostDetail() {
       if (id) {
         const numericId = parseInt(id, 10);
         if (!isNaN(numericId)) {
-          setPost(await Posts.get(numericId));
+          const username = (await SecureStore.getItemAsync("username")) || undefined;
+          setPost(await Posts.get(numericId, { username }));
         }
       }
     })();

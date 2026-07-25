@@ -302,6 +302,7 @@ export type Post = {
   liked: boolean,
   highlight_color?: string;
   highlight_content?: string;
+  site_name?: string | null;
   total_use?: boolean;
   branch_use?: boolean;
   // 신규 모집 항목: 본부
@@ -1174,8 +1175,10 @@ export const Posts = {
   },
 
 
-  get: async (id: number): Promise<Post> => {
-    const { data } = await api.get(`/community/posts/${id}`);
+  get: async (id: number, opts?: { username?: string }): Promise<Post> => {
+    const params: Record<string, string> = {};
+    if (opts?.username) params.username = opts.username;
+    const { data } = await api.get(`/community/posts/${id}`, { params });
     return data;
   },
 
@@ -1374,8 +1377,10 @@ export const Notify = {
     return data;
   },
 
-  getUnreadCount: async (username: string) => {
-    const { data } = await api.get(`/notify/my/${encodeURIComponent(username)}/unread/count`);
+  getUnreadCount: async (username: string, opts?: { post_type?: number }) => {
+    const { data } = await api.get(`/notify/my/${encodeURIComponent(username)}/unread/count`, {
+      params: opts?.post_type != null ? { post_type: opts.post_type } : undefined,
+    });
     return data.unread_count;
   },
 

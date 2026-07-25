@@ -1983,7 +1983,7 @@ ${INSTALL_URL}
           setLayoutHeight(Math.floor(e.nativeEvent.layout.height));
         }}
         showsVerticalScrollIndicator={false}
-        style={{ flex: 1, backgroundColor: "#fff", paddingTop: 3 }}
+        style={{ flex: 1, backgroundColor: "#fff", paddingTop: 0 }}
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + 2 }}
         data={listFeedItems}
         ref={listRef}

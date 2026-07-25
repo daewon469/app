@@ -2,17 +2,18 @@ import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
 import { getSession } from "@/utils/session";
 import { Image as ExpoImage } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentProps } from "react";
 import type { ScrollView as RNScrollView } from "react-native";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
-  Image as RNImage,
   Linking,
   Modal,
   Pressable,
   SafeAreaView,
+  ScrollView,
   Share,
   Text as RNText,
   View,
@@ -20,9 +21,12 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Card } from "react-native-paper";
 import { Auth, resolveMediaUrl, type Post } from "../../lib/api";
+import { postToSiteAnalysisPayload, requestSiteAnalysis } from "../../utils/siteAnalysis";
+import { parseSiteAnalysisSections } from "../../utils/siteAnalysisPrompt";
 import BusinessIddPicker from "../BusinessIdPicker";
 import ScrollNavigator from "../ScrollNavigator";
 import WorkIdPicker from "../workIdPicker";
+import Heart from "./heart";
 import NaverMap from "./navermap";
 import ZoomableImage from "./ZoomableImage";
 
@@ -36,6 +40,14 @@ export default function Postcard_detail({ post }: { post: Post }) {
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showBizModal, setShowBizModal] = useState(false);
   const [imageZoomVisible, setImageZoomVisible] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const parsedAi = useMemo(
+    () => (aiText ? parseSiteAnalysisSections(aiText) : null),
+    [aiText],
+  );
   const BASE_ACTION_BAR_HEIGHT = 56;
   const EDIT_ROW_HEIGHT = 46; // 40(height) + 6(gap)
   const [me, setMe] = useState<string | null>(null);
@@ -431,23 +443,25 @@ export default function Postcard_detail({ post }: { post: Post }) {
               }}
             />
 
-            <Card mode="elevated" style={sectionCard}>
+            {/* 현장한마디 / 현장명 / 업종 / 지역 */}
+            <Card mode="elevated" style={[sectionCard, { paddingRight: 52 }]}>
               <Card.Content>
-                <Text style={{
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  color: post.highlight_color === "white" || post.highlight_color === "black" ?
-                    valueDark.color : post.highlight_color
-                }}>
-                  {post.highlight_content}
-                </Text>
-              </Card.Content>
-            </Card>
-
-            {/* 업종/지역 */}
-            <Card mode="elevated" style={sectionCard}>
-              <Card.Content>
-                <Text style={label}>
+                {post.highlight_content ? (
+                  <Text style={{
+                    fontSize: 16,
+                    fontWeight: "bold",
+                    color: post.highlight_color === "white" || post.highlight_color === "black" ?
+                      valueDark.color : post.highlight_color
+                  }}>
+                    {post.highlight_content}
+                  </Text>
+                ) : null}
+                {post.site_name ? (
+                  <Text style={[label, { paddingTop: post.highlight_content ? 15 : 0 }]}>
+                    현장명 : <Text style={valueDark}>{post.site_name}</Text>
+                  </Text>
+                ) : null}
+                <Text style={[label, { paddingTop: post.highlight_content || post.site_name ? 15 : 0 }]}>
                   업종 : <Text style={valueDark}>{post.job_industry ?? "-"}</Text>
                 </Text>
                 <Text style={[label, { paddingTop: 15 }]}>
@@ -715,6 +729,183 @@ export default function Postcard_detail({ post }: { post: Post }) {
         showButtons={true}
       />
 
+      {/* 업종/지역 카드 위에 겹치며, 스크롤해도 유지 */}
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: "absolute",
+          right: 14,
+          top: 225,
+          zIndex: 60,
+          alignItems: "center",
+        }}
+      >
+        <Heart postId={post.id} postLiked={post.liked} size={28} />
+        <View style={{ height: 10 }} />
+        <Pressable
+          onPress={async () => {
+            setAiOpen(true);
+            setAiLoading(true);
+            setAiError(null);
+            setAiText(null);
+            const res = await requestSiteAnalysis(postToSiteAnalysisPayload(post));
+            setAiLoading(false);
+            if (!res.ok) {
+              setAiError(res.error);
+              return;
+            }
+            setAiText(res.analysis);
+          }}
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 23,
+            backgroundColor: "#38BDF8",
+            borderWidth: 1,
+            borderColor: "#000",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          hitSlop={8}
+        >
+          <Text
+            style={{
+              color: "#fff",
+              fontWeight: "900",
+              fontSize: 13,
+              lineHeight: 14,
+              includeFontPadding: false,
+            }}
+          >
+            AI
+          </Text>
+          <Text
+            style={{
+              color: "#fff",
+              fontWeight: "900",
+              fontSize: 13,
+              lineHeight: 14,
+              includeFontPadding: false,
+            }}
+          >
+            분석
+          </Text>
+        </Pressable>
+      </View>
+
+      <Modal
+        visible={aiOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAiOpen(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            justifyContent: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              maxHeight: Dimensions.get("window").height * 0.85,
+              width: "100%",
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: "#000",
+              backgroundColor: "#fff",
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: "rgba(0,0,0,0.08)",
+              }}
+            >
+              <Text style={{ fontSize: 17, fontWeight: "800" }}>AI 현장분석</Text>
+              <Pressable onPress={() => setAiOpen(false)} hitSlop={8}>
+                <Text style={{ color: "#666", fontWeight: "600" }}>닫기</Text>
+              </Pressable>
+            </View>
+
+            {aiLoading ? (
+              <View
+                style={{
+                  minHeight: 200,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 24,
+                }}
+              >
+                <ActivityIndicator size="large" color="#38BDF8" />
+                <Text style={{ marginTop: 16, fontSize: 15, fontWeight: "700", color: "#0B1B3A" }}>
+                  현장 정보를 바탕으로 분석 중이에요
+                </Text>
+                <Text style={{ marginTop: 6, fontSize: 12, color: "#888", textAlign: "center" }}>
+                  입지, 교통, 인프라 분석을 통해 최고의 분석을 제공해요
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                bounces={false}
+                style={{ maxHeight: Dimensions.get("window").height * 0.85 - 56 }}
+                contentContainerStyle={{
+                  paddingHorizontal: 12,
+                  paddingTop: 6,
+                  paddingBottom: 6,
+                }}
+                showsVerticalScrollIndicator
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              >
+                {aiError ? <Text style={{ color: "#c62828" }}>{aiError}</Text> : null}
+                {aiText && parsedAi && parsedAi.sections.length === 0 ? (
+                  <Text style={{ fontSize: 14, lineHeight: 24, color: "#111" }}>{aiText}</Text>
+                ) : null}
+                {parsedAi && parsedAi.sections.length > 0 ? (
+                  <View style={{ gap: 8 }}>
+                    {parsedAi.sections.map((section) => (
+                      <View
+                        key={section.heading}
+                        style={{
+                          borderWidth: 1,
+                          borderColor: "rgba(0,0,0,0.15)",
+                          backgroundColor: "#f8fafc",
+                          borderRadius: 12,
+                          paddingHorizontal: 12,
+                          paddingVertical: 10,
+                        }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: "800", color: "#0284c7" }}>
+                          {section.heading}
+                        </Text>
+                        <Text
+                          style={{
+                            marginTop: 6,
+                            fontSize: 14,
+                            lineHeight: 22,
+                            color: "#222",
+                          }}
+                        >
+                          {section.body}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* 이미지 줌(핀치) 모달 */}
       <Modal
         visible={imageZoomVisible}
@@ -754,10 +945,9 @@ export default function Postcard_detail({ post }: { post: Post }) {
                         style={{
                           fontSize: 40,
                           lineHeight: 44,
-                          fontWeight: "900",
-                          color: "rgba(255,255,255,0.85)",
+                          fontWeight: "300",
+                          color: "rgba(255,255,255,0.55)",
                           textAlign: "center",
-                        
                           textShadowColor: "rgba(0,0,0,0.38)",
                           textShadowOffset: { width: 1, height: 1 },
                           textShadowRadius: 4,
@@ -844,7 +1034,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 borderColor: "#000",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: !contactDigits ? "#999" : "#2E7D32",
+                backgroundColor: !contactDigits ? "#999" : "#1DB14D",
                 opacity: pressed ? 0.85 : 1,
               })}
             >
@@ -865,7 +1055,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 borderColor: "#000",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: !contactDigits ? "#999" : "#1565C0",
+                backgroundColor: !contactDigits ? "#999" : "#1C9BEB",
                 opacity: pressed ? 0.85 : 1,
               })}
             >
@@ -884,7 +1074,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 borderColor: "#000",
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#6A1B9A",
+                backgroundColor: "#E84A4A",
                 opacity: pressed ? 0.85 : 1,
               })}
             >
@@ -901,16 +1091,8 @@ export default function Postcard_detail({ post }: { post: Post }) {
 }
 
 function DynamicImage({ uri, onPress }: { uri: string; onPress?: (e: any) => void }) {
-  const [height, setHeight] = useState(200);
-  const horizontalPadding = 10; // 
+  const horizontalPadding = 10;
   const cardWidth = screenWidth - horizontalPadding * 2;
-
-  useEffect(() => {
-    RNImage.getSize(uri, (width, height) => {
-      const scale = cardWidth / width; // 
-      setHeight(height * scale);
-    });
-  }, [uri]);
 
   return (
     <Pressable
@@ -920,15 +1102,16 @@ function DynamicImage({ uri, onPress }: { uri: string; onPress?: (e: any) => voi
       <View
         style={{
           width: cardWidth,
-          height,
+          height: cardWidth,
           alignSelf: "center",
           position: "relative",
+          backgroundColor: "#f2f2f2",
         }}
       >
         <ExpoImage
           source={{ uri }}
           cachePolicy="memory-disk"
-          contentFit="cover"
+          contentFit="fill"
           style={{
             width: "100%",
             height: "100%",

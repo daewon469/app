@@ -5,7 +5,6 @@ import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text as RNText, TextInput as RNTextInput, SafeAreaView, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,8 +16,9 @@ import WorkPicker from "../components/WorkMapPicker";
 import { API_URL, Posts, type StatusType } from "../lib/api";
 import { RootState } from "../store";
 import { setBusinessLocation, setWorkLocation } from "../store/LocationSlice";
-import { buildKakaoMapUrl } from "../utils/map";
 import { inputFontWeightStyle, PLACEHOLDER_FONT_WEIGHT } from "../utils/inputStyle";
+import { buildKakaoMapUrl } from "../utils/map";
+import * as SecureStore from "../utils/secureStorage";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -158,6 +158,7 @@ export default function PostWrite() {
 
   const [contractFee, setContractFee] = useState<string | undefined>(undefined);
   const [onetoking, setOneToking] = useState<string | undefined>(undefined);
+  const [siteName, setSiteName] = useState<string | undefined>(undefined);
   const [textColor, setTextColor] = useState("#111111");
 
   const [showWorkModal, setShowWorkModal] = useState(false);
@@ -187,7 +188,7 @@ export default function PostWrite() {
   const INDUSTRIES = [
     "아파트/상가/오피스",
     "오피스텔/도시형생활주택/레지던스",
-    "호텔/리조트/지식산업센터",
+    "호텔·리조트/연립·다가구/지식산업센터",
     "타운하우스/토지/기타",
   ] as const;
 
@@ -198,13 +199,27 @@ export default function PostWrite() {
     "오피스텔",
     "도시형생활주택",
     "레지던스",
-    "호텔",
-    "리조트",
+    "호텔/리조트",
+    "연립/다가구",
     "지식산업센터",
     "타운하우스",
     "토지",
     "기타",
   ] as const;
+
+  const normalizeIndustryTokens = (items: string[]): string[] => {
+    const out: string[] = [];
+    let hasHotelResort = false;
+    for (const item of items) {
+      if (item === "호텔" || item === "리조트" || item === "호텔/리조트") {
+        hasHotelResort = true;
+        continue;
+      }
+      out.push(item);
+    }
+    if (hasHotelResort) out.push("호텔/리조트");
+    return Array.from(new Set(out));
+  };
 
   // 업종 모달 사용 위한 상태
   const [industryModalVisible, setIndustryModalVisible] = useState(false);
@@ -691,7 +706,9 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
           setJobIndustry(data.job_industry ?? undefined);
           // 업종이 쉼표로 구분된 문자열인 경우 배열로 변환
           if (data.job_industry) {
-            const industries = data.job_industry.split(",").map(s => s.trim()).filter(Boolean);
+            const industries = normalizeIndustryTokens(
+              data.job_industry.split(",").map(s => s.trim()).filter(Boolean),
+            );
             setSelectedIndustries(new Set(industries));
             setIndustryTempSelected(new Set(industries));
           } else {
@@ -708,6 +725,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
           setMealSupport(!!data.meal_support);
           setHouseSupport(!!data.house_support);
           setOneToking(data.highlight_content ?? undefined);
+          setSiteName(data.site_name ?? undefined);
           setTextColor(normalizeTokingColor(data.highlight_color ?? "#111111"));
           setAgencyMan(data.agent ?? undefined);
           setSelectedRegion(normalizeRegionValue((data as any).province, (data as any).city));
@@ -945,6 +963,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
 
         highlight_color: textColor || undefined,
         highlight_content: onetoking || undefined,
+        site_name: siteName || undefined,
 
         total_use: selected.has("총괄"),
         total_fee: fees["총괄"] || undefined,
@@ -1218,13 +1237,9 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
           scrollEventThrottle={16}
         >
 
-          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, color: "#666" }}>
-            ※ 구인등록은 하루 1회 가능합니다.
-          </Text>
 
           {/* 소개 이미지 */}
           <View>
-            <Text style={[label, { marginBottom: 12, marginTop: 10 }]}>소개 이미지</Text>
             <View style={{ marginBottom: 8 }}>
               <Image
                 source={imageUri ? { uri: imageUri } : DEFAULT_IMAGE}
@@ -1320,6 +1335,21 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               maxLength={31}
               onChangeText={setOneToking}
               style={[inputStyle, { color: textColor }, inputFontWeightStyle(onetoking)]}
+            />
+          </View>
+
+          {/* 현장명 */}
+          <View style={{ marginTop: 16 }}>
+            <Text style={[label, { fontWeight: "700", fontSize: 16, marginBottom: 8 }]}>
+              현장명
+            </Text>
+            <TextInput
+              placeholderTextColor={placeholder}
+              value={siteName}
+              maxLength={255}
+              onChangeText={setSiteName}
+              placeholder="현장명을 입력하세요"
+              style={[inputStyle, inputFontWeightStyle(siteName)]}
             />
           </View>
 

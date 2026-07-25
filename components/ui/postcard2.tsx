@@ -50,8 +50,15 @@ function Postcard({ post, disableImageZoom = false }: { post: Post; disableImage
               <ExpoImage
                 source={{ uri: imageUri }}
                 cachePolicy="memory-disk"
-                contentFit="cover"
-                style={{ width: 70, height: 70, borderRadius: 4, margin: 4, marginBottom: 4 }}
+                contentFit="fill"
+                style={{
+                  width: 70,
+                  height: 70,
+                  borderRadius: 4,
+                  margin: 4,
+                  marginBottom: 4,
+                  backgroundColor: "#e5e5e5",
+                }}
               />
             )}
             <View style={{ flex: 1 }}>

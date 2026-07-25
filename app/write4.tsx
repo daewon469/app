@@ -1,18 +1,18 @@
 import { KAKAO_MAP_JS_KEY } from "@/constants/keys";
-import { Image as ExpoImage } from "expo-image";
+import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system";
+import { Image as ExpoImage } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     Alert,
     Animated,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
     Text as RNText,
     TextInput as RNTextInput,
+    SafeAreaView,
     TouchableOpacity,
     useWindowDimensions,
     View,
@@ -29,8 +29,9 @@ import BusinessPicker from "../components/BusinessMapPicker";
 import ScrollNavigator from "../components/ScrollNavigator";
 import NaverMap from "../components/ui/navermap";
 import { API_URL, Posts } from "../lib/api";
-import { buildKakaoMapUrl } from "../utils/map";
 import { inputFontWeightStyle } from "../utils/inputStyle";
+import { buildKakaoMapUrl } from "../utils/map";
+import * as SecureStore from "../utils/secureStorage";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -126,6 +127,9 @@ type LocationSel = {
     lng: number;
     address?: string;
 };
+
+// 이미지 미선택 시 기본 이미지
+const DEFAULT_IMAGE = require("../assets/images/default0725.png");
 
 export default function AdPostWrite() {
     const { id, job_industry } = useLocalSearchParams<{ id?: string; job_industry?: string }>();
@@ -445,8 +449,29 @@ export default function AdPostWrite() {
             setLoading(true);
             let imageUrl: string | undefined;
 
-            // 로컬 이미지일 경우 업로드
-            if (imageUri && !imageUri.startsWith("http")) {
+            if (!imageUri) {
+                // 기본 이미지도 서버에 업로드해서 image_url로 저장
+                const asset = Asset.fromModule(DEFAULT_IMAGE);
+                try {
+                    await asset.downloadAsync();
+                } catch {
+                    // ignore (asset.uri가 바로 사용 가능할 수 있음)
+                }
+                const uri = asset.localUri ?? asset.uri;
+                const b64 = await FileSystem.readAsStringAsync(uri, {
+                    encoding: "base64",
+                });
+                const upload = await fetch(`${API_URL}/upload/base64`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        filename: `default_${Date.now()}.png`,
+                        base64: b64,
+                    }),
+                });
+                const data = await upload.json();
+                imageUrl = data.url;
+            } else if (imageUri && !imageUri.startsWith("http")) {
                 const b64 = await FileSystem.readAsStringAsync(imageUri, {
                     encoding: "base64",
                 });
@@ -627,53 +652,42 @@ export default function AdPostWrite() {
                 }
                 scrollEventThrottle={16}
             >
-                <Text
-                    style={{
-                        fontSize: 18,
-                        fontWeight: "bold",
-                        marginBottom: 10,
-                        color: "#666",
-                    }}
-                >
-                    ※ 광고글을 등록해주세요
-                </Text>
-
+              
                 {/* 이미지 업로드 */}
                 <View style={cardBox}>
-                    <Text style={[label, { marginBottom: 8, fontSize: 16 }]}>광고 이미지</Text>
-                    {imageUri && (
-                        <View style={{ marginBottom: 8 }}>
+                    <View style={{ marginBottom: 8 }}>
                             <ExpoImage
-                                source={{ uri: imageUri }}
+                                source={imageUri ? { uri: imageUri } : DEFAULT_IMAGE}
                                 cachePolicy="memory-disk"
                                 contentFit="cover"
                                 style={{
                                     width: "100%",
-                                    height: 180,
+                                    height: imageUri ? 180 : 260,
                                     borderRadius: 12,
                                 }}
                             />
 
-                            {/* X 버튼 */}
-                            <TouchableOpacity
-                                disabled={isPreview}
-                                onPress={() => setImageUri(null)}
-                                style={{
-                                    position: "absolute",
-                                    top: 6,
-                                    right: 6,
-                                    backgroundColor: "rgba(0,0,0,0.6)",
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 14,
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                }}
-                            >
-                                <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>×</Text>
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                            {/* X 버튼: 사용자가 선택한 이미지가 있을 때만 */}
+                            {imageUri ? (
+                                <TouchableOpacity
+                                    disabled={isPreview}
+                                    onPress={() => setImageUri(null)}
+                                    style={{
+                                        position: "absolute",
+                                        top: 6,
+                                        right: 6,
+                                        backgroundColor: "rgba(0,0,0,0.6)",
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: 14,
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>×</Text>
+                                </TouchableOpacity>
+                            ) : null}
+                    </View>
                     <TouchableOpacity
                         disabled={isPreview}
                         onPress={pickImage}
