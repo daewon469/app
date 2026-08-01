@@ -241,27 +241,11 @@ export default function MyPagePreview() {
     };
 
     const referralCode = (summary?.referral_code ?? "52330").toString().trim() || "52330";
-    const INSTALL_URL = "https://play.google.com/store/apps/details?id=com.smartgauge.bunyangpro";
-
-    const buildReferralMessage = () => {
-        return `분양프로 설치 링크
-${INSTALL_URL}
-
-내 추천인코드: ${referralCode}
-
-안녕하세요! (__) (^.^)
-
-<분양프로>는 분양상담사 구인구직에 최적화된 어플입니다.
-
-무료로 구인등록 하시고, 다양한 포인트 혜택도 누려보세요!
-
-지금 '플레이스토어'에서 <분양프로>를 다운 받아보세요^^
-`;
-    };
 
     const handleRecommendKakao = async () => {
         try {
-            await Share.share({ message: buildReferralMessage() });
+            const { buildReferralMessage } = await import("../lib/referral");
+            await Share.share({ message: buildReferralMessage(referralCode) });
         } catch (e) {
             Alert.alert("오류", "공유를 실행할 수 없습니다.");
         } finally {
@@ -271,7 +255,8 @@ ${INSTALL_URL}
 
     const handleRecommendSms = async () => {
         try {
-            const body = encodeURIComponent(buildReferralMessage());
+            const { buildReferralMessage } = await import("../lib/referral");
+            const body = encodeURIComponent(buildReferralMessage(referralCode));
             const url = Platform.OS === "ios" ? `sms:&body=${body}` : `sms:?body=${body}`;
             await Linking.openURL(url);
         } catch (e) {
@@ -283,7 +268,8 @@ ${INSTALL_URL}
 
     const handleCopyReferralMessage = async () => {
         try {
-            await Clipboard.setStringAsync(buildReferralMessage());
+            const { buildReferralMessage } = await import("../lib/referral");
+            await Clipboard.setStringAsync(buildReferralMessage(referralCode));
             Alert.alert("복사 완료", "추천 문구가 클립보드에 복사되었습니다.");
         } catch (e) {
             Alert.alert("오류", "추천 문구 복사에 실패했습니다.");
@@ -1624,7 +1610,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    상단배너 관리
+                                    상단배너 모바일
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />
@@ -1648,7 +1634,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    하단배너 관리
+                                    하단배너 모바일
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />
@@ -1672,7 +1658,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    팝업창 안드로이드 웹
+                                    팝업창 안드로이드·웹
                                 </Text>
                                 <Text style={{ fontSize: 12, color: colors.subText, marginTop: 2 }}>
                                     안드로이드·웹

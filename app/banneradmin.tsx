@@ -282,7 +282,7 @@ export default function BannerAdmin() {
             padding: 14,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>배너 관리</Text>
+          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>하단배너 모바일</Text>
 
           <Pressable
             onPress={() => setEnabled((p) => !p)}

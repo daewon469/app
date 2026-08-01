@@ -1270,6 +1270,9 @@ export const Posts = {
 
   listCustom: async (opts?: {
     username?: string;
+    provinces?: string[];
+    industries?: string[];
+    roles?: string[];
     cursor?: PostListCursor;
     limit?: number;
     status?: "published" | "closed";
@@ -1279,6 +1282,16 @@ export const Posts = {
     if (opts?.cursor) params.cursor = opts.cursor;
     params.limit = opts?.limit ?? 120;
     if (opts?.status) params.status = opts.status;
+    if (opts?.provinces?.length) params.provinces = opts.provinces.join(",");
+    if (opts?.industries?.length) params.industries = opts.industries.join(",");
+    if (opts?.roles?.length) params.roles = opts.roles.join(",");
+    const hasFilterOverride =
+      opts?.provinces !== undefined || opts?.industries !== undefined || opts?.roles !== undefined;
+    if (hasFilterOverride) {
+      if (!params.provinces) params.provinces = "";
+      if (!params.industries) params.industries = "";
+      if (!params.roles) params.roles = "";
+    }
     try {
       const { data } = await api.get(`/community/posts/custom`, { params });
       return data ?? { items: [], next_cursor: undefined };

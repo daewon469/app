@@ -786,7 +786,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
               }}
               style={{
                 width: 46,
-                height: 46,
+                height: 52,
                 borderRadius: 23,
                 backgroundColor: "#0B1B3A",
                 borderWidth: 1,
@@ -800,23 +800,24 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 style={{
                   color: "#fff",
                   fontWeight: "900",
-                  fontSize: 16,
-                  lineHeight: 17,
+                  fontSize: 11,
+                  lineHeight: 12,
                   includeFontPadding: false,
                 }}
               >
-                A
+                A I
               </Text>
               <Text
                 style={{
                   color: "#fff",
                   fontWeight: "900",
-                  fontSize: 13,
-                  lineHeight: 14,
+                  fontSize: 9,
+                  lineHeight: 10,
+                  marginTop: 2,
                   includeFontPadding: false,
                 }}
               >
-                I
+                분석
               </Text>
             </Pressable>
           </>

@@ -65,6 +65,18 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    if (!loaded) return;
+    void (async () => {
+      try {
+        const { capturePlayInstallReferralCode } = await import("../lib/referral");
+        await capturePlayInstallReferralCode();
+      } catch {
+        // ignore
+      }
+    })();
+  }, [loaded]);
+
+  useEffect(() => {
     if (!loaded || !isPushNotificationsSupported) return;
 
     let cancelled = false;

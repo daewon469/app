@@ -24,6 +24,7 @@ import PostCardS from "../components/ui/postcards";
 import PostcardSSlider from "../components/ui/PostcardSSlider";
 import ReferralModal from "../components/ui/ReferralModal";
 import { Auth, Points, Posts, resolveMediaUrl, UIConfig, type Post, type UIConfigBannerItem } from "../lib/api";
+import { buildReferralMessage } from "../lib/referral";
 import { isReferralModalAction, isReferralModalLinkUrl, normalizeBannerClickAction } from "../lib/ui_banner_actions";
 import {
   isCardTypeS,
@@ -341,6 +342,17 @@ export default function Postlist() {
     const hasIndFilter = inds.length > 0;
     const hasRoleFilter = roles.length > 0;
     return hasProvFilter || hasIndFilter || hasRoleFilter;
+  }, [customFilter]);
+  const customFilterParams = useMemo(() => {
+    const f = customFilter || { provinces: [], industries: [], roles: [] };
+    return {
+      provinces: (f.provinces || [])
+        .map((s) => String(s ?? "").trim())
+        .filter(Boolean)
+        .filter((p) => p !== "전체"),
+      industries: (f.industries || []).map((s) => String(s ?? "").trim()).filter(Boolean),
+      roles: (f.roles || []).map((s) => String(s ?? "").trim()).filter(Boolean),
+    };
   }, [customFilter]);
   // 지도검색(오버레이)은 지역검색 필터와 무관하게 항상 "전국" 데이터로 렌더링
   const [mapItems, setMapItems] = useState<Post[]>([]);
@@ -693,28 +705,6 @@ export default function Postlist() {
     }
   }, [mapSearchOpen, mapMarkerMode, markerCounts.business, markerCounts.workplace]);
 
-  const INSTALL_URL = "https://play.google.com/store/apps/details?id=com.smartgauge.bunyangpro";
-
-  const buildReferralMessage = useCallback(
-    (code: string | null) => {
-      const codeText = (String(code ?? "52330").trim() || "52330");
-      return `분양프로 설치 링크
-${INSTALL_URL}
-
-내 추천인코드: ${codeText}
-
-안녕하세요! (__) (^.^)
-
-<분양프로>는 분양상담사 구인구직에 최적화된 어플입니다.
-
-무료로 구인등록 하시고, 다양한 포인트 혜택도 누려보세요!
-
-지금 '플레이스토어'에서 <분양프로>를 다운 받아보세요^^
-`;
-    },
-    []
-  );
-
   const handleRecommendKakao = useCallback(async () => {
     try {
       await Share.share({ message: buildReferralMessage(referralCode) });
@@ -723,7 +713,7 @@ ${INSTALL_URL}
     } finally {
       setReferralModalVisible(false);
     }
-  }, [Alert, Share, buildReferralMessage, referralCode]);
+  }, [Alert, Share, referralCode]);
 
   const handleRecommendSms = useCallback(async () => {
     try {
@@ -735,7 +725,7 @@ ${INSTALL_URL}
     } finally {
       setReferralModalVisible(false);
     }
-  }, [Alert, Linking, Platform, buildReferralMessage, referralCode]);
+  }, [Alert, Linking, Platform, referralCode]);
 
   const handleCopyReferralMessage = useCallback(async () => {
     const message = buildReferralMessage(referralCode);
@@ -745,7 +735,7 @@ ${INSTALL_URL}
     } catch (e) {
       Alert.alert("오류", "추천 문구 복사에 실패했습니다.");
     }
-  }, [Alert, buildReferralMessage, referralCode]);
+  }, [Alert, referralCode]);
 
   const handleOpenKakaoOpenChat = useCallback(async () => {
     const url = "https://open.kakao.com/o/gWwAD7bi";
@@ -1172,15 +1162,25 @@ ${INSTALL_URL}
         }
 
         const requestLimit = isCustomViewActive ? FILTER_PAGE_SIZE : PAGE_SIZE;
-        const { items: fetchedItems = [], next_cursor } = await Posts.list({
-          username,
-          cursor: reset ? undefined : pageCursor,
-          status: "published",
-          limit: requestLimit,
-          province,
-          city,
-          regions,
-        });
+        const { items: fetchedItems = [], next_cursor } = isCustomViewActive
+          ? await Posts.listCustom({
+              username,
+              cursor: reset ? undefined : pageCursor,
+              status: "published",
+              limit: requestLimit,
+              provinces: customFilterParams.provinces,
+              industries: customFilterParams.industries,
+              roles: customFilterParams.roles,
+            })
+          : await Posts.list({
+              username,
+              cursor: reset ? undefined : pageCursor,
+              status: "published",
+              limit: requestLimit,
+              province,
+              city,
+              regions,
+            });
 
         // 서버가 next_cursor를 "항상" 내려주는 경우가 있어서,
         // 실제로 다음 페이지가 존재하는지(=limit 만큼 꽉 찼는지)로 보정합니다.
@@ -1206,7 +1206,7 @@ ${INSTALL_URL}
         setLoading(false);
       }
     },
-    [selectedRegionsKey, selectedRegions, username, pageCursors, isCustomViewActive]
+    [selectedRegionsKey, selectedRegions, username, pageCursors, isCustomViewActive, customFilterParams]
   );
 
   // 무한스크롤: 다음 cursor가 있으면 다음 페이지를 이어서 로드
@@ -1272,6 +1272,18 @@ ${INSTALL_URL}
     void loadSlidePosts();
   }, [loadSlidePosts]);
 
+  const customFilterKey = useMemo(
+    () => JSON.stringify(customFilterParams),
+    [customFilterParams],
+  );
+
+  useEffect(() => {
+    if (mapSearchOpen) return;
+    setCursor(undefined);
+    setPageCursors(new Map());
+    void load(1, true);
+  }, [customFilterKey, mapSearchOpen, load]);
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
@@ -1298,6 +1310,8 @@ ${INSTALL_URL}
   }, [items]);
 
   const orderedItems = useMemo(() => {
+    if (isCustomViewActive) return orderedItemsRaw;
+
     const f = customFilter || { provinces: [], industries: [], roles: [] };
     const provs = (f.provinces || []).map((s) => String(s ?? "").trim()).filter(Boolean);
     const inds = (f.industries || []).map((s) => String(s ?? "").trim()).filter(Boolean);
@@ -1364,13 +1378,15 @@ ${INSTALL_URL}
           .map((s) => s.trim())
           .filter(Boolean);
         if (indList.length === 0) return false;
-        const hasAnyIndustry = indList.some((ind) => inds.includes(ind));
+        const hasAnyIndustry = inds.some((code) =>
+          indList.some((ind) => ind === code || ind.includes(code)),
+        );
         if (!hasAnyIndustry) return false;
       }
       if (!matchRole(p)) return false;
       return true;
     });
-  }, [customFilter, orderedItemsRaw]);
+  }, [customFilter, orderedItemsRaw, isCustomViewActive]);
 
   const postcardS = useMemo(() => {
     const ordered = orderSlidePosts(slidePosts, slidePostIds);
@@ -1392,7 +1408,7 @@ ${INSTALL_URL}
         const indRaw = String((p as any).job_industry ?? "").trim();
         if (!indRaw) return false;
         const indList = indRaw.split(",").map((s) => s.trim()).filter(Boolean);
-        if (!indList.some((ind) => inds.includes(ind))) return false;
+        if (!indList.some((ind) => inds.some((code) => ind === code || ind.includes(code)))) return false;
       }
       if (hasRoleFilter) {
         const wants = new Set(roles);

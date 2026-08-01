@@ -4,7 +4,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text as RNText, View } from "react-native";
 import { resolveMediaUrl, type Post } from "../../lib/api";
 import { formatProvinceCity, formatRoles } from "../../utils/postCardFormat";
-import { getSlideMeshThemeAsync, slideMeshStyles, type SlideMeshTheme } from "../../utils/slideCardTheme";
+import {
+  getSlideMeshSettingsAsync,
+  slideMeshStyles,
+  subscribeSlideMeshTheme,
+} from "../../utils/slideCardTheme";
 import Heart from "./heart";
 
 export const LIST_CARD_HEIGHT_TYPE_S = 364;
@@ -46,14 +50,19 @@ function PostCardS({
   borderRadius = 12,
   edgeToEdge = false,
 }: Props) {
-  const [meshTheme, setMeshTheme] = useState<SlideMeshTheme>("dark");
+  const [mesh, setMesh] = useState(() => slideMeshStyles("dark", 0.5));
   const imageUri = useMemo(() => resolveSlideCardImage(post), [post]);
   const industryProvinceCity = `${post.job_industry ?? ""}/${formatProvinceCity(post.province, post.city)}`;
   const resolvedRadius = edgeToEdge ? 0 : borderRadius;
-  const mesh = slideMeshStyles(meshTheme);
 
   useEffect(() => {
-    void getSlideMeshThemeAsync().then(setMeshTheme);
+    const load = () => {
+      void getSlideMeshSettingsAsync().then((s) => {
+        setMesh(slideMeshStyles(s.theme, s.opacity[s.theme]));
+      });
+    };
+    load();
+    return subscribeSlideMeshTheme(load);
   }, []);
 
   return (
@@ -96,8 +105,6 @@ function PostCardS({
               paddingTop: 2,
               paddingBottom: 3,
               backgroundColor: mesh.meshColor,
-              borderBottomWidth: 1,
-              borderBottomColor: mesh.meshColor,
             }}
           >
             <Text
@@ -136,8 +143,6 @@ function PostCardS({
               paddingTop: 3,
               paddingBottom: 2,
               backgroundColor: mesh.meshColor,
-              borderTopWidth: 1,
-              borderTopColor: mesh.meshColor,
             }}
           >
             <Text

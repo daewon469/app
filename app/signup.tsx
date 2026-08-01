@@ -81,6 +81,23 @@ export default function SignupScreen() {
   );
 
   useEffect(() => {
+    if (isEditMode) return;
+    (async () => {
+      try {
+        const {
+          capturePlayInstallReferralCode,
+          loadPendingReferralCode,
+        } = await import("../lib/referral");
+        await capturePlayInstallReferralCode();
+        const pending = await loadPendingReferralCode();
+        if (pending) setReferralCode(pending);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [isEditMode]);
+
+  useEffect(() => {
     if (!isEditMode || !originalUsername) return;
 
     (async () => {
@@ -308,6 +325,12 @@ export default function SignupScreen() {
           marketingConsent,
         );
         if (res.status === 0) {
+          try {
+            const { clearPendingReferralCode } = await import("../lib/referral");
+            await clearPendingReferralCode();
+          } catch {
+            // ignore
+          }
           const referralAmount = Number(res.referral_bonus_referred_amount ?? 0);
           const signupAmount = Number(res.signup_bonus_amount ?? 0);
           let msg = "회원가입 성공!";

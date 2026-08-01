@@ -83,7 +83,7 @@ export default function CustomSiteSettingsScreen() {
         "도시형생활주택",
         "레지던스",
         "호텔/리조트",
-        "연립/다가구",
+        "연립/다세대",
         "지식산업센터",
         "타운하우스",
         "토지",

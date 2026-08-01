@@ -161,7 +161,7 @@ export default function PopupAdmin() {
             padding: 14,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>팝업창 안드로이드 웹</Text>
+          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>팝업창 안드로이드·웹</Text>
           <Text style={{ color: "#666", marginBottom: 10, fontSize: 12 }}>
             안드로이드·웹에 적용됩니다. 아이폰은「아이폰 팝업창 관리」를 사용하세요.
           </Text>
