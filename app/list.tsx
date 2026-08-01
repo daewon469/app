@@ -1272,11 +1272,6 @@ ${INSTALL_URL}
     void loadSlidePosts();
   }, [loadSlidePosts]);
 
-  const postcardS = useMemo(
-    () => orderSlidePosts(slidePosts, slidePostIds),
-    [slidePosts, slidePostIds]
-  );
-
   useFocusEffect(
     useCallback(() => {
       (async () => {
@@ -1376,6 +1371,46 @@ ${INSTALL_URL}
       return true;
     });
   }, [customFilter, orderedItemsRaw]);
+
+  const postcardS = useMemo(() => {
+    const ordered = orderSlidePosts(slidePosts, slidePostIds);
+    if (!isCustomViewActive) return ordered;
+    const f = customFilter || { provinces: [], industries: [], roles: [] };
+    const provs = (f.provinces || []).map((s) => String(s ?? "").trim()).filter(Boolean);
+    const inds = (f.industries || []).map((s) => String(s ?? "").trim()).filter(Boolean);
+    const roles = (f.roles || []).map((s) => String(s ?? "").trim()).filter(Boolean);
+    const hasProvFilter = provs.length > 0 && !provs.includes("전체");
+    const hasIndFilter = inds.length > 0;
+    const hasRoleFilter = roles.length > 0;
+    if (!hasProvFilter && !hasIndFilter && !hasRoleFilter) return ordered;
+    return ordered.filter((p) => {
+      if (hasProvFilter) {
+        const sp = normalizeProvinceShort((p as any).province);
+        if (!sp || !provs.includes(sp)) return false;
+      }
+      if (hasIndFilter) {
+        const indRaw = String((p as any).job_industry ?? "").trim();
+        if (!indRaw) return false;
+        const indList = indRaw.split(",").map((s) => s.trim()).filter(Boolean);
+        if (!indList.some((ind) => inds.includes(ind))) return false;
+      }
+      if (hasRoleFilter) {
+        const wants = new Set(roles);
+        const hasBranchOnly = Boolean((p as any).branch_use);
+        const hasTotal = Boolean((p as any).total_use);
+        const hasLeaderOrTeam = Boolean((p as any).leader_use || (p as any).team_use);
+        const hasMemberOrEach = Boolean((p as any).member_use || (p as any).each_use);
+        const ok =
+          (wants.has("총괄") && hasTotal) ||
+          (wants.has("본부장") && hasBranchOnly) ||
+          (wants.has("팀장") && hasLeaderOrTeam) ||
+          (wants.has("팀원") && hasMemberOrEach) ||
+          (wants.has("기타") && Boolean(String((p as any).other_role_name ?? "").trim()));
+        if (!ok) return false;
+      }
+      return true;
+    });
+  }, [slidePosts, slidePostIds, isCustomViewActive, customFilter]);
 
   // 특정 위치에 서버 설정 배너를 끼워넣기 위한 리스트 데이터
   // - FlatList 가상화 때문에 renderItem에서 index 기반으로 처리하면 위치가 틀어질 수 있어

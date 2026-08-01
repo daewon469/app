@@ -108,7 +108,7 @@ export default function ReferralsScreen() {
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
             <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>
-              내가 추천한 회원
+              추천한 회원
             </Text>
             <View
               style={{

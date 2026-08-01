@@ -635,7 +635,7 @@ ${INSTALL_URL}
                         />
                         <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                내가 추천한 회원{" "}
+                                추천한 회원{" "}
                                 <Text style={{ color: colors.subText }}>({referralCount}명)</Text>
                             </Text>
                         </View>
@@ -699,7 +699,7 @@ ${INSTALL_URL}
                         />
                         <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                나의 추천인 인맥{" "}
+                                추천인 인맥{" "}
                                 <Text style={{ color: colors.subText }}>({referralNetworkCount}명)</Text>
                             </Text>
                         </View>
@@ -1453,7 +1453,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    제목검색 추천현장 관리
+                                    제목검색 추천현장
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />
@@ -1477,7 +1477,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    슬라이드 현장 관리
+                                    슬라이드 현장
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />
@@ -1672,7 +1672,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    팝업창 관리
+                                    팝업창 안드로이드 웹
                                 </Text>
                                 <Text style={{ fontSize: 12, color: colors.subText, marginTop: 2 }}>
                                     안드로이드·웹
@@ -1699,7 +1699,7 @@ ${INSTALL_URL}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    아이폰 팝업창 관리
+                                    팝업창 아이폰
                                 </Text>
                                 <Text style={{ fontSize: 12, color: colors.subText, marginTop: 2 }}>
                                     App Store 심사용
@@ -1712,7 +1712,30 @@ ${INSTALL_URL}
                             style={{
                                 flexDirection: "row",
                                 alignItems: "center",
-                                // 마지막 항목: 아래쪽이 두꺼워 보이지 않게 top padding만 적용
+                                paddingVertical: 10,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
+                            onPress={() => router.push("/testenv")}
+                        >
+                            <Ionicons
+                                name="flask-outline"
+                                size={20}
+                                color={colors.primary}
+                                style={{ marginRight: 10 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                    테스트 환경
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                        </Pressable>
+
+                        <Pressable
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
                                 paddingTop: 10,
                                 borderTopWidth: 1,
                                 borderTopColor: colors.border,

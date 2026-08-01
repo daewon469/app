@@ -788,7 +788,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 width: 46,
                 height: 46,
                 borderRadius: 23,
-                backgroundColor: "#38BDF8",
+                backgroundColor: "#0B1B3A",
                 borderWidth: 1,
                 borderColor: "#000",
                 alignItems: "center",
@@ -805,18 +805,18 @@ export default function Postcard_detail({ post }: { post: Post }) {
                   includeFontPadding: false,
                 }}
               >
-                AI
+                A
               </Text>
               <Text
                 style={{
-                  color: "#F97316",
+                  color: "#fff",
                   fontWeight: "900",
                   fontSize: 13,
                   lineHeight: 14,
                   includeFontPadding: false,
                 }}
               >
-                분석
+                I
               </Text>
             </Pressable>
           </>

@@ -1245,7 +1245,7 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
                 source={imageUri ? { uri: imageUri } : DEFAULT_IMAGE}
                 style={{
                   width: "100%",
-                  height: imageUri ? 180 : 260,
+                  aspectRatio: 1,
                   borderRadius: 12,
                 }}
                 resizeMode="cover"

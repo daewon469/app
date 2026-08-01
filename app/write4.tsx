@@ -129,7 +129,7 @@ type LocationSel = {
 };
 
 // 이미지 미선택 시 기본 이미지
-const DEFAULT_IMAGE = require("../assets/images/default0725.png");
+const DEFAULT_IMAGE = require("../assets/images/adimage_0001.png");
 
 export default function AdPostWrite() {
     const { id, job_industry } = useLocalSearchParams<{ id?: string; job_industry?: string }>();
@@ -662,7 +662,7 @@ export default function AdPostWrite() {
                                 contentFit="cover"
                                 style={{
                                     width: "100%",
-                                    height: imageUri ? 180 : 260,
+                                    aspectRatio: 16 / 10,
                                     borderRadius: 12,
                                 }}
                             />

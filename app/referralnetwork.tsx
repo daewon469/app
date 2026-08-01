@@ -132,7 +132,7 @@ export default function ReferralNetworkScreen() {
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
-            나의 추천인 인맥
+            추천인 인맥
           </Text>
           <View
             style={{

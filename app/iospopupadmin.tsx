@@ -162,7 +162,7 @@ export default function IosPopupAdmin() {
             padding: 14,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>아이폰 팝업창 관리</Text>
+          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>팝업창 아이폰</Text>
           <Text style={{ color: "#666", marginBottom: 10, fontSize: 12 }}>
             App Store 심사용. 아이폰 앱에만 적용됩니다. (안드로이드·웹과 별도)
           </Text>

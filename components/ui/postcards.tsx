@@ -1,17 +1,13 @@
 import { Link } from "expo-router";
 import { Image as ExpoImage } from "expo-image";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text as RNText, View } from "react-native";
 import { resolveMediaUrl, type Post } from "../../lib/api";
 import { formatProvinceCity, formatRoles } from "../../utils/postCardFormat";
+import { getSlideMeshThemeAsync, slideMeshStyles, type SlideMeshTheme } from "../../utils/slideCardTheme";
 import Heart from "./heart";
 
-/** 웹과 동일 — 1:1일 때 미사용, 레거시 참조용 */
 export const LIST_CARD_HEIGHT_TYPE_S = 364;
-
-/** 검정 매쉬·테두리 고정 투명도 */
-const MESH_OPACITY = 0.5;
-const MESH_COLOR = `rgba(0,0,0,${MESH_OPACITY})`;
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -38,7 +34,6 @@ function CardImage({ uri, style }: { uri: string | null; style?: object }) {
 type Props = {
   post: Post;
   showHeart?: boolean;
-  /** 지정 시 해당 높이 사용, 미지정 시 width 기준 1:1 */
   height?: number;
   borderRadius?: number;
   edgeToEdge?: boolean;
@@ -51,9 +46,15 @@ function PostCardS({
   borderRadius = 12,
   edgeToEdge = false,
 }: Props) {
+  const [meshTheme, setMeshTheme] = useState<SlideMeshTheme>("dark");
   const imageUri = useMemo(() => resolveSlideCardImage(post), [post]);
   const industryProvinceCity = `${post.job_industry ?? ""}/${formatProvinceCity(post.province, post.city)}`;
   const resolvedRadius = edgeToEdge ? 0 : borderRadius;
+  const mesh = slideMeshStyles(meshTheme);
+
+  useEffect(() => {
+    void getSlideMeshThemeAsync().then(setMeshTheme);
+  }, []);
 
   return (
     <View
@@ -74,8 +75,8 @@ function PostCardS({
             overflow: "hidden",
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
-            borderBottomLeftRadius: resolvedRadius,
-            borderBottomRightRadius: resolvedRadius,
+            borderBottomLeftRadius: 0,
+            borderBottomRightRadius: 0,
             borderWidth: edgeToEdge ? 0 : 1,
             borderColor: "#000",
             backgroundColor: "#000",
@@ -94,18 +95,18 @@ function PostCardS({
               paddingHorizontal: 8,
               paddingTop: 2,
               paddingBottom: 3,
-              backgroundColor: MESH_COLOR,
+              backgroundColor: mesh.meshColor,
               borderBottomWidth: 1,
-              borderBottomColor: MESH_COLOR,
+              borderBottomColor: mesh.meshColor,
             }}
           >
             <Text
               numberOfLines={1}
               style={{
                 fontSize: 17,
-                fontWeight: "700",
+                fontWeight: "600",
                 lineHeight: 19,
-                color: "#fff",
+                color: mesh.textColor,
               }}
             >
               {post.title}
@@ -114,9 +115,9 @@ function PostCardS({
               numberOfLines={1}
               style={{
                 fontSize: 13,
-                fontWeight: "700",
+                fontWeight: "500",
                 lineHeight: 15,
-                color: "#fff",
+                color: mesh.textColor,
               }}
             >
               {String(post.highlight_content ?? "").trim() || " "}
@@ -134,18 +135,18 @@ function PostCardS({
               paddingHorizontal: 8,
               paddingTop: 3,
               paddingBottom: 2,
-              backgroundColor: MESH_COLOR,
+              backgroundColor: mesh.meshColor,
               borderTopWidth: 1,
-              borderTopColor: MESH_COLOR,
+              borderTopColor: mesh.meshColor,
             }}
           >
             <Text
               numberOfLines={1}
               style={{
                 fontSize: 15,
-                fontWeight: "700",
+                fontWeight: "500",
                 lineHeight: 17,
-                color: "#fff",
+                color: mesh.textColor,
               }}
             >
               {industryProvinceCity}
@@ -154,9 +155,9 @@ function PostCardS({
               numberOfLines={1}
               style={{
                 fontSize: 15,
-                fontWeight: "700",
+                fontWeight: "500",
                 lineHeight: 17,
-                color: "#fff",
+                color: mesh.textColor,
               }}
             >
               {formatRoles(post)}

@@ -187,7 +187,7 @@ export default function TitleSearchAdmin() {
             padding: 14,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>제목검색 추천현장 관리</Text>
+          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>제목검색 추천현장</Text>
 
           <Pressable
             onPress={() => setEnabled((p) => !p)}

@@ -54,7 +54,7 @@ export type PostPatch = Omit<Partial<Post>, "other_role_name" | "other_role_fee"
 };
 export const api: AxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 20000,
 });
 
 // 관리자/오너 API는 토큰 인증을 사용하지 않음(Authorization 헤더 미첨부)
@@ -66,7 +66,7 @@ export const adminApi: AxiosInstance = axios.create({
 // 로그인 전 공개 API(아이디/비밀번호 찾기 등) — 만료 토큰 첨부로 인한 실패 방지
 const publicApi: AxiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 20000,
 });
 
 const isTransientNetworkFailure = (error: unknown): boolean => {
@@ -76,7 +76,7 @@ const isTransientNetworkFailure = (error: unknown): boolean => {
   return !error.response || error.code === "ECONNABORTED";
 };
 
-async function postPublicJson<T>(url: string, body: unknown, retries = 1): Promise<T> {
+async function postPublicJson<T>(url: string, body: unknown, retries = 2): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {

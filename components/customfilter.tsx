@@ -195,7 +195,7 @@ export default function CustomFilterModal({ visible, value, onClose, onApply }: 
             {/* 지역 */}
             <Text style={styles.sectionTitleFirst}>
               지역{" "}
-              <Text style={styles.sectionSub}>(복수선택 가능 / 미선택시 전체)</Text>
+              <Text style={styles.sectionSub}>(복수선택 가능 / 미선택시 전체 선택됨)</Text>
             </Text>
             <TableGrid
               items={REGION_OPTIONS}
@@ -208,7 +208,7 @@ export default function CustomFilterModal({ visible, value, onClose, onApply }: 
             {/* 업종 */}
             <Text style={styles.sectionTitle}>
               업종{" "}
-              <Text style={styles.sectionSub}>(복수선택 가능 / 미선택시 전체)</Text>
+              <Text style={styles.sectionSub}>(복수선택 가능 / 미선택시 전체 선택됨)</Text>
             </Text>
             <TableGrid
               items={INDUSTRY_OPTIONS}
@@ -221,7 +221,7 @@ export default function CustomFilterModal({ visible, value, onClose, onApply }: 
             {/* 모집 */}
             <Text style={styles.sectionTitle}>
               모집{" "}
-              <Text style={styles.sectionSub}>(복수선택 가능 / 미선택시 전체)</Text>
+              <Text style={styles.sectionSub}>(복수선택 가능 / 미선택시 전체 선택됨)</Text>
             </Text>
             <View style={styles.rolesOuter}>
               <View style={{ flexDirection: "row" }}>

@@ -351,7 +351,7 @@ export default function CustomSiteSettingsScreen() {
           <Text style={{ marginTop: 12, color: colors.text, fontSize: 15, fontWeight: "900" }}>
             지역{" "}
             <Text style={{ color: colors.subText, fontSize: 10, fontWeight: "500" }}>
-              (복수선택 가능 / 미선택시 선택됨)
+              (복수선택 가능 / 미선택시 전체 선택됨)
             </Text>
           </Text>
           <TableGrid
@@ -365,7 +365,7 @@ export default function CustomSiteSettingsScreen() {
           <Text style={{ marginTop: 14, color: colors.text, fontSize: 15, fontWeight: "900" }}>
             업종{" "}
             <Text style={{ color: colors.subText, fontSize: 10, fontWeight: "500" }}>
-              (복수선택 가능 / 미선택시 선택됨)
+              (복수선택 가능 / 미선택시 전체 선택됨)
             </Text>
           </Text>
           <TableGrid
@@ -393,7 +393,7 @@ export default function CustomSiteSettingsScreen() {
           <Text style={{ marginTop: 14, color: colors.text, fontSize: 15, fontWeight: "900" }}>
             모집{" "}
             <Text style={{ color: colors.subText, fontSize: 10, fontWeight: "500" }}>
-              (복수선택 가능 / 미선택시 선택됨)
+              (복수선택 가능 / 미선택시 전체 선택됨)
             </Text>
           </Text>
           <View

@@ -212,7 +212,7 @@ export default function SlidePostsAdmin() {
             padding: 14,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>슬라이드 현장 관리</Text>
+          <Text style={{ fontSize: 18, fontWeight: "900", marginBottom: 10 }}>슬라이드 현장</Text>
           <Text style={{ marginBottom: 6, color: "#666", fontWeight: "700", lineHeight: 20 }}>
             선택한 현장은 슬라이드 앞에 고정됩니다(최대 10개). 부족분은 서버가 최신 구인글로
             card_type=5를 자동 채워 총 10개를 유지합니다.
