@@ -785,40 +785,24 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 setAiText(res.analysis);
               }}
               style={{
-                width: 46,
+                width: 52,
                 height: 52,
-                borderRadius: 23,
-                backgroundColor: "#0B1B3A",
-                borderWidth: 1,
-                borderColor: "#000",
-                alignItems: "center",
-                justifyContent: "center",
+                borderRadius: 26,
+                overflow: "hidden",
+                shadowColor: "#1E90FF",
+                shadowOpacity: 0.55,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 0 },
+                elevation: 6,
               }}
               hitSlop={8}
+              accessibilityLabel="AI 분석"
             >
-              <Text
-                style={{
-                  color: "#fff",
-                  fontWeight: "900",
-                  fontSize: 11,
-                  lineHeight: 12,
-                  includeFontPadding: false,
-                }}
-              >
-                A I
-              </Text>
-              <Text
-                style={{
-                  color: "#fff",
-                  fontWeight: "900",
-                  fontSize: 9,
-                  lineHeight: 10,
-                  marginTop: 2,
-                  includeFontPadding: false,
-                }}
-              >
-                분석
-              </Text>
+              <ExpoImage
+                source={require("../../assets/images/ai-analysis-btn.png")}
+                style={{ width: 52, height: 52 }}
+                contentFit="cover"
+              />
             </Pressable>
           </>
         }

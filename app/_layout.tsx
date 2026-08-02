@@ -6,7 +6,7 @@ import { router, Stack } from 'expo-router';
 import * as SecureStore from "../utils/secureStorage";
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from "react";
-import { Alert, Platform, Text, TextInput, View } from "react-native";
+import { Alert, Appearance, Platform, Text, TextInput, View } from "react-native";
 import 'react-native-gesture-handler';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { MD3LightTheme, PaperProvider } from "react-native-paper";
@@ -35,6 +35,13 @@ function disableFontScalingGlobally() {
 }
 
 disableFontScalingGlobally();
+
+// 시스템 다크모드여도 앱 UI는 라이트 고정
+try {
+  Appearance.setColorScheme?.("light");
+} catch {
+  // ignore
+}
 
 if (isPushNotificationsSupported) {
   Notifications.setNotificationHandler({

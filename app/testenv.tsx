@@ -212,12 +212,15 @@ export default function TestEnvScreen() {
     }, 250);
   };
 
+  // 시스템 다크모드여도 라이트 UI 고정 (텍스트 색 명시)
   return (
     <View style={{ flex: 1, backgroundColor: "#fff", padding: 16 }}>
       <Pressable onPress={() => router.back()}>
         <Text style={{ color: "#4A6CF7", fontWeight: "700" }}>← 내페이지</Text>
       </Pressable>
-      <Text style={{ marginTop: 12, fontSize: 20, fontWeight: "900" }}>테스트 환경</Text>
+      <Text style={{ marginTop: 12, fontSize: 20, fontWeight: "900", color: "#0B1B3A" }}>
+        테스트 환경
+      </Text>
       <Text style={{ marginTop: 8, fontSize: 13, color: "#666" }}>
         5유형 슬라이드 카드 매쉬 색상·투명도를 선택합니다. 서버에 저장되어 앱·웹에 공통 적용됩니다.
       </Text>
@@ -246,7 +249,7 @@ export default function TestEnvScreen() {
                 }}
               >
                 <Pressable onPress={() => void applyTheme(opt.theme)}>
-                  <Text style={{ fontWeight: "800" }}>
+                  <Text style={{ fontWeight: "800", color: "#0B1B3A" }}>
                     {opt.label} (투명도 {pct} · {opt.textHint})
                   </Text>
                 </Pressable>

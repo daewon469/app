@@ -553,9 +553,9 @@ export default function MyPagePreview() {
                             marginBottom: 8,
                         }}
                     >
-                        1.포인트 관리
+                        1. 포인트 관리
                     </Text>
-                    {/* 추천하기 (추천인코드) */}
+                    {/* 추천하기 (코드) */}
                     <Pressable
                         style={{
                             flexDirection: "row",
@@ -586,7 +586,7 @@ export default function MyPagePreview() {
                             <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                 추천하기{" "}
                                 <Text style={{ color: colors.subText }}>
-                                    (추천인코드 {summary?.referral_code || "없음"})
+                                    (코드 {summary?.referral_code || "없음"})
                                 </Text>
                             </Text>
                         </View>
@@ -596,7 +596,31 @@ export default function MyPagePreview() {
                             color={colors.subText}
                         />
                     </Pressable>
-                    {/* 내가 추천한 회원 */}
+                    {/* 추천인 랭킹 */}
+                    <Pressable
+                        style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            paddingVertical: 10,
+                            borderTopWidth: 1,
+                            borderTopColor: colors.border,
+                        }}
+                        onPress={() => router.push("/referralranking")}
+                    >
+                        <Ionicons
+                            name="trophy-outline"
+                            size={20}
+                            color={colors.primary}
+                            style={{ marginRight: 10 }}
+                        />
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                추천인 랭킹
+                            </Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                    </Pressable>
+                    {/* 추천한 회원 */}
                     <Pressable
                         style={{
                             flexDirection: "row",
@@ -631,36 +655,7 @@ export default function MyPagePreview() {
                             color={colors.subText}
                         />
                     </Pressable>
-
-
-
-                    {/* 추천인 랭킹 */}
-                    <Pressable
-                        style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            paddingVertical: 10,
-                            borderTopWidth: 1,
-                            borderTopColor: colors.border,
-                        }}
-                        onPress={() => router.push("/referralranking")}
-                    >
-                        <Ionicons
-                            name="trophy-outline"
-                            size={20}
-                            color={colors.primary}
-                            style={{ marginRight: 10 }}
-                        />
-                        <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                추천인 랭킹
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-forward" size={18} color={colors.subText} />
-                    </Pressable>
-
-
-                    {/* 내 인맥(하위 추천) */}
+                    {/* 추천인 인맥 */}
                     <Pressable
                         style={{
                             flexDirection: "row",
@@ -691,7 +686,7 @@ export default function MyPagePreview() {
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={colors.subText} />
                     </Pressable>
-                    {/* 내 포인트 적립 내역 */}
+                    {/* 적립/사용 내역 */}
                     <Pressable
                         style={{
                             flexDirection: "row",
@@ -1563,6 +1558,30 @@ export default function MyPagePreview() {
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     회원 관리 <Text style={{ color: colors.subText }}>(오너용)</Text>
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                        </Pressable>
+
+                        <Pressable
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                paddingVertical: 10,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
+                            onPress={() => router.push("/adminconfirm")}
+                        >
+                            <Ionicons
+                                name="shield-checkmark-outline"
+                                size={20}
+                                color={colors.primary}
+                                style={{ marginRight: 10 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                    관리자 확인 <Text style={{ color: colors.subText }}>(오너용)</Text>
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />

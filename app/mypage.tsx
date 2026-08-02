@@ -4,19 +4,25 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Modal,
   RefreshControl,
   Text as RNText,
+  TextInput as RNTextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ScrollNavigator from "../components/ScrollNavigator";
-import { Post, Posts, StatusType } from "../lib/api";
+import { Auth, Post, Posts, StatusType } from "../lib/api";
 import { formatPostDateTime } from "../utils/dateFormat";
 import { getSession } from "../utils/session";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
+);
+
+const TextInput = (props: React.ComponentProps<typeof RNTextInput>) => (
+  <RNTextInput {...props} allowFontScaling={false} />
 );
 
 const STATUS_TABS: (StatusType | "all")[] = ["all", "published", "closed"];
@@ -27,20 +33,23 @@ export default function MyPage() {
 
   const colors = {
     background: "#fff",
-    card:  "#fff",
-    text:  "#000",
-    border:  "#000",
+    card: "#fff",
+    text: "#000",
+    border: "#000",
     primary: "#4A6CF7",
     link: "blue",
   };
 
   const [me, setMe] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [tab, setTab] = useState<(StatusType | "all")>("all");
   const [items, setItems] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [repostingId, setRepostingId] = useState<number | null>(null);
+  const [recreateTarget, setRecreateTarget] = useState<Post | null>(null);
+  const [recreateAuthor, setRecreateAuthor] = useState("");
 
   const scrollRef = useRef<any>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -61,6 +70,12 @@ export default function MyPage() {
         return;
       }
       setMe(s.username);
+      try {
+        const summary = await Auth.getMyPageSummary(s.username);
+        setIsOwner(summary.status === 0 && !!summary.is_owner);
+      } catch {
+        setIsOwner(false);
+      }
     })();
   }, []);
 
@@ -157,32 +172,37 @@ const fetchList = useCallback(
     router.push({ pathname: "/write", params: { id: String(post.id) } });
   };
 
-  const onRecreate = (post: Post) => {
-    if (!me) return;
-    Alert.alert("재등록", "동일한 글을 복사해서 새 글로 등록할까요?", [
-      { text: "취소" },
-      {
-        text: "재등록",
-        onPress: async () => {
-          setRepostingId(post.id);
-          try {
-            await Posts.recreate(post.id, me);
-            Alert.alert("완료", "재등록되었습니다.");
-            setCursor(undefined);
-            await fetchList(true);
-          } catch (e: any) {
-            const msg =
-              e?.response?.data?.detail ??
-              e?.response?.data?.message ??
-              e?.message ??
-              "재등록에 실패했습니다.";
-            Alert.alert("오류", String(msg));
-          } finally {
-            setRepostingId(null);
-          }
-        },
-      },
-    ]);
+  const openRecreate = (post: Post) => {
+    if (!isOwner) return;
+    setRecreateTarget(post);
+    setRecreateAuthor(me || "");
+  };
+
+  const submitRecreate = async () => {
+    if (!recreateTarget) return;
+    const author = recreateAuthor.trim();
+    if (!author) {
+      Alert.alert("알림", "새 작성자 닉네임을 입력해 주세요.");
+      return;
+    }
+    const postId = recreateTarget.id;
+    setRepostingId(postId);
+    setRecreateTarget(null);
+    try {
+      await Posts.recreate(postId, author);
+      Alert.alert("완료", `작성자 '${author}'(으)로 재등록되었습니다.`);
+      setCursor(undefined);
+      await fetchList(true);
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.detail ??
+        e?.response?.data?.message ??
+        e?.message ??
+        "재등록에 실패했습니다.";
+      Alert.alert("오류", String(msg));
+    } finally {
+      setRepostingId(null);
+    }
   };
 
   const renderItem = ({ item }: { item: Post }) => (
@@ -195,9 +215,42 @@ const fetchList = useCallback(
           gap: 8,
           borderWidth: 1,
           borderColor: colors.border,
+          position: "relative",
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "bold", color: colors.text }}>{item.title}</Text>
+        {isOwner && (
+          <TouchableOpacity
+            onPress={() => openRecreate(item)}
+            disabled={repostingId === item.id}
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              zIndex: 2,
+              borderWidth: 1,
+              borderColor: colors.primary,
+              backgroundColor: "#EEF4FF",
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              opacity: repostingId === item.id ? 0.5 : 1,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>
+              {repostingId === item.id ? "재등록 중..." : "재등록"}
+            </Text>
+          </TouchableOpacity>
+        )}
+        <Text
+          style={{
+            fontSize: 16,
+            fontWeight: "bold",
+            color: colors.text,
+            paddingRight: isOwner ? 72 : 0,
+          }}
+        >
+          {item.title}
+        </Text>
         <Text style={{ fontSize: 13, fontWeight: "600", color: "#4A6CF7" }}>
           {item.author?.username ?? "-"}
         </Text>
@@ -217,12 +270,6 @@ const fetchList = useCallback(
             justifyContent: "space-between",
           }}
         >
-          <ActionBtn
-            label={repostingId === item.id ? "재등록 중..." : "재등록"}
-            onPress={() => onRecreate(item)}
-            disabled={repostingId === item.id}
-            colors={colors}
-          />
           <ActionBtn label="수정" onPress={() => onEdit(item)} colors={colors} />
           <ActionBtn
             label="마감"
@@ -305,6 +352,83 @@ const fetchList = useCallback(
         thumbOpacity={1.0}
         barWidth={4}
       />
+
+      <Modal
+        visible={!!recreateTarget}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRecreateTarget(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: "#000",
+              padding: 16,
+              gap: 10,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: "900", color: "#0B1B3A" }}>재등록</Text>
+            <Text style={{ fontSize: 13, color: "#666", lineHeight: 18 }}>
+              동일 내용으로 새 글을 등록합니다. 새 작성자 닉네임만 지정해 주세요.
+            </Text>
+            <TextInput
+              value={recreateAuthor}
+              onChangeText={setRecreateAuthor}
+              placeholder="새 작성자 닉네임"
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+              style={{
+                borderWidth: 1,
+                borderColor: "#000",
+                borderRadius: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: "#111",
+                fontSize: 14,
+              }}
+            />
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+              <TouchableOpacity
+                onPress={() => setRecreateTarget(null)}
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 8,
+                  paddingVertical: 11,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontWeight: "700", color: "#333" }}>닫기</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => void submitRecreate()}
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: colors.primary,
+                  backgroundColor: colors.primary,
+                  borderRadius: 8,
+                  paddingVertical: 11,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontWeight: "700", color: "#fff" }}>재등록</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -350,7 +474,7 @@ function ActionBtn({
   disabled?: boolean;
   colors: any;
 }) {
-  const bg = danger ? (/* 위험 동작은 테마 중성 배경 + 보더로 */ colors.card) : colors.card;
+  const bg = danger ? colors.card : colors.card;
   const border = danger ? "#ff6b63" : colors.border;
   const textColor = danger ? "#ff6b63" : colors.text;
 

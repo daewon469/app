@@ -1,4 +1,5 @@
 import { api, type Post } from "../lib/api";
+import { SITE_ANALYSIS_CHAPTER_ORDER } from "./siteAnalysisPrompt";
 
 export type SiteAnalysisPayload = {
   title?: string;
@@ -11,6 +12,8 @@ export type SiteAnalysisPayload = {
   business_address?: string | null;
   content?: string | null;
   company_agency?: string | null;
+  /** 백엔드 프롬프트가 지원하면 챕터 순서 고정에 사용 */
+  chapter_order?: string[];
 };
 
 export function postToSiteAnalysisPayload(post: Post): SiteAnalysisPayload {
@@ -25,6 +28,7 @@ export function postToSiteAnalysisPayload(post: Post): SiteAnalysisPayload {
     business_address: post.business_address,
     content: post.content,
     company_agency: post.company_agency,
+    chapter_order: [...SITE_ANALYSIS_CHAPTER_ORDER],
   };
 }
 
