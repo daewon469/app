@@ -7,8 +7,9 @@ export type SlideMeshSettings = {
   opacity: SlideMeshOpacityMap;
 };
 
-const STORAGE_KEY = "slide_mesh_theme:v2";
-const LEGACY_STORAGE_KEY = "slide_mesh_theme:v1";
+/** SecureStore 키는 alphanumeric / . / - / _ 만 허용 (콜론 불가) */
+const STORAGE_KEY = "slide_mesh_theme.v2";
+const LEGACY_STORAGE_KEYS = ["slide_mesh_theme:v2", "slide_mesh_theme:v1", "slide_mesh_theme.v1"];
 
 export const DEFAULT_MESH_OPACITY = 0.5;
 export const MIN_MESH_OPACITY = 0.1;
@@ -48,7 +49,7 @@ function parseOpacityMap(raw: unknown): SlideMeshOpacityMap {
   };
 }
 
-function defaultSettings(): SlideMeshSettings {
+export function defaultSlideMeshSettings(): SlideMeshSettings {
   return {
     theme: "dark",
     opacity: { ...DEFAULT_OPACITY },
@@ -73,33 +74,60 @@ export function subscribeSlideMeshTheme(listener: ThemeListener) {
   };
 }
 
+export function parseSlideMeshSettings(raw: unknown): SlideMeshSettings {
+  if (!raw || typeof raw !== "object") return defaultSlideMeshSettings();
+  const src = raw as Record<string, unknown>;
+  return {
+    theme: parseTheme(typeof src.theme === "string" ? src.theme : undefined),
+    opacity: parseOpacityMap(src.opacity),
+  };
+}
+
 async function readSettings(): Promise<SlideMeshSettings> {
   try {
-    const SecureStore = (await import("../utils/secureStorage")).default;
+    const SecureStore = await import("../utils/secureStorage");
     const raw = await SecureStore.getItemAsync(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<SlideMeshSettings>;
-      return {
-        theme: parseTheme(parsed.theme),
-        opacity: parseOpacityMap(parsed.opacity),
-      };
+      return parseSlideMeshSettings(JSON.parse(raw));
     }
-    const legacy = await SecureStore.getItemAsync(LEGACY_STORAGE_KEY);
-    if (legacy) {
-      return {
-        theme: parseTheme(legacy),
-        opacity: { ...DEFAULT_OPACITY },
-      };
+    for (const legacyKey of LEGACY_STORAGE_KEYS) {
+      try {
+        const legacy = await SecureStore.getItemAsync(legacyKey);
+        if (!legacy) continue;
+        // v2 JSON or v1 plain theme string
+        let settings: SlideMeshSettings;
+        try {
+          settings = parseSlideMeshSettings(JSON.parse(legacy));
+        } catch {
+          settings = {
+            theme: parseTheme(legacy),
+            opacity: { ...DEFAULT_OPACITY },
+          };
+        }
+        // 새 키로 마이그레이션
+        try {
+          await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(settings));
+        } catch {
+          // ignore
+        }
+        return settings;
+      } catch {
+        // legacy key may be invalid for SecureStore — skip
+      }
     }
   } catch {
     // ignore
   }
-  return defaultSettings();
+  return defaultSlideMeshSettings();
 }
 
 async function writeSettings(settings: SlideMeshSettings) {
-  const SecureStore = (await import("../utils/secureStorage")).default;
-  await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(settings));
+  try {
+    const SecureStore = await import("../utils/secureStorage");
+    await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(settings));
+  } catch {
+    // SecureStore 실패해도 메모리 구독자는 갱신
+  }
   notifyThemeListeners();
 }
 
@@ -136,12 +164,14 @@ export async function setSlideMeshSettings(
   partial: Partial<SlideMeshSettings> & { theme?: SlideMeshTheme },
 ) {
   const prev = await readSettings();
-  await writeSettings({
+  const next: SlideMeshSettings = {
     theme: partial.theme ? parseTheme(partial.theme) : prev.theme,
     opacity: partial.opacity
       ? parseOpacityMap({ ...prev.opacity, ...partial.opacity })
       : prev.opacity,
-  });
+  };
+  await writeSettings(next);
+  return next;
 }
 
 export function slideMeshStyles(

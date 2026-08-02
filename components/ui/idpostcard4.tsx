@@ -383,33 +383,7 @@ export default function IdPostCard4({ post }: Props) {
               </Text>
             )}
 
-            {/* 담당자 */}
-            {post.agent && (
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: colors.text,
-                  marginBottom: 8,
-                }}
-              >
-                담당자 : {post.agent}
-              </Text>
-            )}
-
-            {/* 연락처 */}
-            {post.agency_call && (
-              <Text
-                style={{
-                  fontSize: 16,
-                  color: colors.text,
-                  marginBottom: 8,
-                }}
-              >
-                연락처 : {formatPhone(post.agency_call)}
-              </Text>
-            )}
-
-            {/* 업무 */}
+            {/* 업무 분류 */}
             {post.job_industry && (
               <Text
                 style={{
@@ -471,6 +445,32 @@ export default function IdPostCard4({ post }: Props) {
                 }}
               >
                 업무4 : {post.item4_sup}
+              </Text>
+            )}
+
+            {/* 담당자 — 업무 분류·상세 아래 */}
+            {post.agent && (
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: colors.text,
+                  marginBottom: 8,
+                }}
+              >
+                담당자 : {post.agent}
+              </Text>
+            )}
+
+            {/* 연락처 */}
+            {post.agency_call && (
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: colors.text,
+                  marginBottom: 8,
+                }}
+              >
+                연락처 : {formatPhone(post.agency_call)}
               </Text>
             )}
 

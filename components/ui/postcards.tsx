@@ -6,6 +6,8 @@ import { resolveMediaUrl, type Post } from "../../lib/api";
 import { formatProvinceCity, formatRoles } from "../../utils/postCardFormat";
 import {
   getSlideMeshSettingsAsync,
+  parseSlideMeshSettings,
+  setSlideMeshSettings,
   slideMeshStyles,
   subscribeSlideMeshTheme,
 } from "../../utils/slideCardTheme";
@@ -62,6 +64,18 @@ function PostCardS({
       });
     };
     load();
+    // 서버 설정이 있으면 로컬 캐시를 덮어쓰고 카드에 반영
+    void (async () => {
+      try {
+        const { UIConfig } = await import("../../lib/api");
+        const res = await UIConfig.get();
+        if (res.config?.slide_mesh) {
+          await setSlideMeshSettings(parseSlideMeshSettings(res.config.slide_mesh));
+        }
+      } catch {
+        // 네트워크 실패 시 로컬 캐시 유지
+      }
+    })();
     return subscribeSlideMeshTheme(load);
   }, []);
 

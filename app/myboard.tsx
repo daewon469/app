@@ -1660,9 +1660,6 @@ export default function MyPagePreview() {
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     팝업창 안드로이드·웹
                                 </Text>
-                                <Text style={{ fontSize: 12, color: colors.subText, marginTop: 2 }}>
-                                    안드로이드·웹
-                                </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />
                         </Pressable>
@@ -1687,9 +1684,6 @@ export default function MyPagePreview() {
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     팝업창 아이폰
                                 </Text>
-                                <Text style={{ fontSize: 12, color: colors.subText, marginTop: 2 }}>
-                                    App Store 심사용
-                                </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />
                         </Pressable>
@@ -1699,30 +1693,6 @@ export default function MyPagePreview() {
                                 flexDirection: "row",
                                 alignItems: "center",
                                 paddingVertical: 10,
-                                borderTopWidth: 1,
-                                borderTopColor: colors.border,
-                            }}
-                            onPress={() => router.push("/testenv")}
-                        >
-                            <Ionicons
-                                name="flask-outline"
-                                size={20}
-                                color={colors.primary}
-                                style={{ marginRight: 10 }}
-                            />
-                            <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    테스트 환경
-                                </Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
-                        </Pressable>
-
-                        <Pressable
-                            style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                paddingTop: 10,
                                 borderTopWidth: 1,
                                 borderTopColor: colors.border,
                             }}
@@ -1737,6 +1707,30 @@ export default function MyPagePreview() {
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
                                     엑셀 다운로드
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                        </Pressable>
+
+                        <Pressable
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                paddingTop: 10,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
+                            onPress={() => router.push("/testenv")}
+                        >
+                            <Ionicons
+                                name="flask-outline"
+                                size={20}
+                                color={colors.primary}
+                                style={{ marginRight: 10 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                    테스트 환경
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />

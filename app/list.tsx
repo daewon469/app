@@ -359,9 +359,10 @@ export default function Postlist() {
   const mapLoadingRef = useRef(false);
   const [mapLoading, setMapLoading] = useState(false);
   const [cursor, setCursor] = useState<string | undefined>();
-  const [pageCursors, setPageCursors] = useState<Map<number, string>>(new Map()); // 페이지별 cursor 저장
+  const cursorRef = useRef<string | undefined>(undefined);
   const [refreshing, setRefreshing] = useState(false);
   const loadingRef = useRef(false);
+  const loadingMoreRef = useRef(false);
   const { selectedProvince, selectedCity, selectedRegions } = useSelector(
     (s: RootState) => s.region
   );
@@ -413,6 +414,28 @@ export default function Postlist() {
     const list = selectedRegions || [];
     return list.map((r) => `${r.province}__${r.city}`).join("|");
   }, [selectedRegions]);
+
+  // load 정체성 안정화용 — effect가 cursor 갱신마다 1페이지로 리셋되지 않게 함
+  const selectedRegionsRef = useRef(selectedRegions);
+  const usernameRef = useRef(username);
+  const isCustomViewActiveRef = useRef(isCustomViewActive);
+  const customFilterParamsRef = useRef(customFilterParams);
+  useEffect(() => {
+    selectedRegionsRef.current = selectedRegions;
+  }, [selectedRegions]);
+  useEffect(() => {
+    usernameRef.current = username;
+  }, [username]);
+  useEffect(() => {
+    isCustomViewActiveRef.current = isCustomViewActive;
+  }, [isCustomViewActive]);
+  useEffect(() => {
+    customFilterParamsRef.current = customFilterParams;
+  }, [customFilterParams]);
+  useEffect(() => {
+    cursorRef.current = cursor;
+  }, [cursor]);
+
   const [regionModalOpen, setRegionModalOpen] = useState(false);
   const selectedRegionsForModal = useMemo<RegionObj[]>(() => {
     // store는 정식명(서울특별시 등) → 모달은 축약형(서울 등)
@@ -840,8 +863,8 @@ export default function Postlist() {
   );
 
   useEffect(() => {
+    cursorRef.current = undefined;
     setCursor(undefined);
-    setPageCursors(new Map());
     setItems([]);
   }, [selectedRegionsKey]);
 
@@ -1122,121 +1145,101 @@ export default function Postlist() {
     username,
   ]);
 
-  const load = useCallback(
-    async (pageNum: number, reset = false) => {
-      if (loadingRef.current) return;
-      loadingRef.current = true;
-      setLoading(true);
+  const load = useCallback(async (reset = false) => {
+    if (loadingRef.current) return;
+    if (!reset && !cursorRef.current) return;
+    loadingRef.current = true;
+    setLoading(true);
 
-      try {
-        // 서버 측 지역 필터링 사용 (단일/복수 지원)
-        let province: string | undefined = undefined;
-        let city: string | undefined = undefined;
-        let regions: string | undefined = undefined;
+    try {
+      // 서버 측 지역 필터링 사용 (단일/복수 지원)
+      let province: string | undefined = undefined;
+      let city: string | undefined = undefined;
+      let regions: string | undefined = undefined;
 
-        const regs = (selectedRegions || []).filter(Boolean);
-        const nationwide = regs.some((r) => r.province === "전체");
-        if (!nationwide && regs.length > 0) {
-          if (regs.length === 1) {
-            // Redux에는 "경기도/서울특별시" 같은 정식명이 들어올 수 있어
-            // 서버에는 "경기/서울" 축약형으로 전송
-            province = normalizeProvinceForServer(regs[0].province);
-            city = regs[0].city === "전체" ? undefined : regs[0].city;
-          } else {
-            regions = regs.map(regionToCode).filter(Boolean).join(",");
-          }
-        }
-
-        // 페이지별 cursor 가져오기
-        let pageCursor: string | undefined = undefined;
-        if (pageNum > 1) {
-          // 이전 페이지들의 cursor를 순차적으로 사용하여 현재 페이지까지 이동
-          // 단순화: 첫 페이지부터 순차적으로 로드
-          const prevCursor = pageCursors.get(pageNum - 1);
-          if (prevCursor) {
-            pageCursor = prevCursor;
-          } else {
-            // 이전 페이지의 데이터가 없으면 첫 페이지부터 로드
-            pageCursor = undefined;
-          }
-        }
-
-        const requestLimit = isCustomViewActive ? FILTER_PAGE_SIZE : PAGE_SIZE;
-        const { items: fetchedItems = [], next_cursor } = isCustomViewActive
-          ? await Posts.listCustom({
-              username,
-              cursor: reset ? undefined : pageCursor,
-              status: "published",
-              limit: requestLimit,
-              provinces: customFilterParams.provinces,
-              industries: customFilterParams.industries,
-              roles: customFilterParams.roles,
-            })
-          : await Posts.list({
-              username,
-              cursor: reset ? undefined : pageCursor,
-              status: "published",
-              limit: requestLimit,
-              province,
-              city,
-              regions,
-            });
-
-        // 서버가 next_cursor를 "항상" 내려주는 경우가 있어서,
-        // 실제로 다음 페이지가 존재하는지(=limit 만큼 꽉 찼는지)로 보정합니다.
-        const effectiveNextCursor =
-          fetchedItems.length >= requestLimit ? next_cursor : undefined;
-
-        if (reset || pageNum === 1) {
-          setItems(fetchedItems);
-          setPageCursors(new Map());
-          if (effectiveNextCursor) {
-            setPageCursors(new Map([[1, effectiveNextCursor]]));
-          }
+      const regs = (selectedRegionsRef.current || []).filter(Boolean);
+      const nationwide = regs.some((r) => r.province === "전체");
+      if (!nationwide && regs.length > 0) {
+        if (regs.length === 1) {
+          // Redux에는 "경기도/서울특별시" 같은 정식명이 들어올 수 있어
+          // 서버에는 "경기/서울" 축약형으로 전송
+          province = normalizeProvinceForServer(regs[0].province);
+          city = regs[0].city === "전체" ? undefined : regs[0].city;
         } else {
-          // 기존 아이템에 추가
-          setItems((prev) => [...prev, ...fetchedItems]);
-          if (effectiveNextCursor) {
-            setPageCursors((prev) => new Map(prev).set(pageNum, effectiveNextCursor));
-          }
+          regions = regs.map(regionToCode).filter(Boolean).join(",");
         }
-        setCursor(effectiveNextCursor);
-      } finally {
-        loadingRef.current = false;
-        setLoading(false);
       }
-    },
-    [selectedRegionsKey, selectedRegions, username, pageCursors, isCustomViewActive, customFilterParams]
-  );
+
+      const requestLimit = isCustomViewActiveRef.current ? FILTER_PAGE_SIZE : PAGE_SIZE;
+      const requestCursor = reset ? undefined : cursorRef.current;
+      const filterParams = customFilterParamsRef.current;
+      const uname = usernameRef.current;
+
+      const { items: fetchedItems = [], next_cursor } = isCustomViewActiveRef.current
+        ? await Posts.listCustom({
+            username: uname,
+            cursor: requestCursor,
+            status: "published",
+            limit: requestLimit,
+            provinces: filterParams.provinces,
+            industries: filterParams.industries,
+            roles: filterParams.roles,
+          })
+        : await Posts.list({
+            username: uname,
+            cursor: requestCursor,
+            status: "published",
+            limit: requestLimit,
+            province,
+            city,
+            regions,
+          });
+
+      // 서버가 next_cursor를 "항상" 내려주는 경우가 있어서,
+      // 실제로 다음 페이지가 존재하는지(=limit 만큼 꽉 찼는지)로 보정합니다.
+      const effectiveNextCursor =
+        fetchedItems.length >= requestLimit ? next_cursor || undefined : undefined;
+
+      if (reset) {
+        setItems(fetchedItems);
+      } else {
+        setItems((prev) => {
+          const byId = new Map<number, Post>();
+          [...prev, ...fetchedItems].forEach((p) => byId.set(p.id, p));
+          return Array.from(byId.values());
+        });
+      }
+      cursorRef.current = effectiveNextCursor;
+      setCursor(effectiveNextCursor);
+    } finally {
+      loadingRef.current = false;
+      setLoading(false);
+    }
+  }, []);
 
   // 무한스크롤: 다음 cursor가 있으면 다음 페이지를 이어서 로드
   const hasNextPage = !!cursor;
-  const pendingNextPageRef = useRef<number | null>(null);
   const lastPrefetchCheckAtRef = useRef(0);
   const requestNextPage = useCallback(async () => {
-    if (!hasNextPage) return false;
-    if (loadingRef.current) return false;
-    const nextPageNum = pageCursors.size + 1; // 1부터 순차 로드
-    if (pendingNextPageRef.current === nextPageNum) return false;
-    pendingNextPageRef.current = nextPageNum;
+    if (!cursorRef.current) return false;
+    if (loadingRef.current || loadingMoreRef.current) return false;
+    loadingMoreRef.current = true;
     try {
-      await load(nextPageNum, false);
+      await load(false);
       return true;
     } finally {
-      if (pendingNextPageRef.current === nextPageNum) {
-        pendingNextPageRef.current = null;
-      }
+      loadingMoreRef.current = false;
     }
-  }, [hasNextPage, load, pageCursors.size]);
+  }, [load]);
   const loadMore = useCallback(async () => {
     if (!hasNextPage) return;
-    if (loadingRef.current) return;
+    if (loadingRef.current || loadingMoreRef.current) return;
     await requestNextPage();
   }, [hasNextPage, requestNextPage]);
   const maybePrefetchNextPage = useCallback(
     (evt: any) => {
       if (!hasNextPage) return;
-      if (loadingRef.current) return;
+      if (loadingRef.current || loadingMoreRef.current) return;
       const now = Date.now();
       if (now - lastPrefetchCheckAtRef.current < PREFETCH_CHECK_INTERVAL_MS) return;
       lastPrefetchCheckAtRef.current = now;
@@ -1279,10 +1282,10 @@ export default function Postlist() {
 
   useEffect(() => {
     if (mapSearchOpen) return;
+    cursorRef.current = undefined;
     setCursor(undefined);
-    setPageCursors(new Map());
-    void load(1, true);
-  }, [customFilterKey, mapSearchOpen, load]);
+    void load(true);
+  }, [customFilterKey, mapSearchOpen, selectedRegionsKey, load]);
 
   useFocusEffect(
     useCallback(() => {
@@ -1291,7 +1294,7 @@ export default function Postlist() {
         // 목록/마커를 다시 로드하지 않아 지도 화면이 "새로고침"처럼 보이지 않게 함
         if (mapSearchOpen) return;
         setRefreshing(true);
-        await Promise.all([load(1, true), loadSlidePosts()]);
+        await Promise.all([load(true), loadSlidePosts()]);
         setRefreshing(false);
       })();
     }, [load, loadSlidePosts, mapSearchOpen])
@@ -2087,10 +2090,10 @@ export default function Postlist() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={async () => {
+              cursorRef.current = undefined;
               setCursor(undefined);
-              setPageCursors(new Map());
               setRefreshing(true);
-              await Promise.all([load(1, true), loadSlidePosts()]);
+              await Promise.all([load(true), loadSlidePosts()]);
               setRefreshing(false);
             }}
           />

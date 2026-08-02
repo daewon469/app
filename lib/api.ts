@@ -699,6 +699,11 @@ export type UIConfigResponse = {
     slide_posts?: {
       post_ids: number[];
     };
+    /** 5유형 슬라이드 카드 매쉬 색상·투명도 */
+    slide_mesh?: {
+      theme: "dark" | "light" | "navy";
+      opacity: { dark: number; light: number; navy: number };
+    };
   };
 };
 
@@ -716,6 +721,10 @@ export const UIConfig = {
             ios_popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
             title_search: { enabled: true, recommended_post_ids: [] },
             slide_posts: { post_ids: [] },
+            slide_mesh: {
+              theme: "dark",
+              opacity: { dark: 0.5, light: 0.5, navy: 0.5 },
+            },
           },
         }
       );
@@ -730,6 +739,10 @@ export const UIConfig = {
           ios_popup: { enabled: true, image_url: null, link_url: null, width_percent: 92, height: 360, resize_mode: "contain" },
           title_search: { enabled: true, recommended_post_ids: [] },
           slide_posts: { post_ids: [] },
+          slide_mesh: {
+            theme: "dark",
+            opacity: { dark: 0.5, light: 0.5, navy: 0.5 },
+          },
         },
       };
     }

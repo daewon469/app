@@ -6,7 +6,7 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text as RNText, TextInput as RNTextInput, SafeAreaView, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Modal, Platform, Pressable, Text as RNText, TextInput as RNTextInput, SafeAreaView, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import BusinessPicker from "../components/BusinessMapPicker";
@@ -124,6 +124,8 @@ const formatAmountInput = (value: string) => {
 
 // 이미지 미선택 시 기본 이미지
 const DEFAULT_IMAGE = require("../assets/images/default0725.png");
+/** 웹용 1:1 원본을 앱 폼에 그대로 풀폭 넣지 않도록 미리보기 최대 한 변 */
+const INTRO_IMAGE_MAX = Math.min(220, Math.round(Dimensions.get("window").width * 0.55));
 
 export default function PostWrite() {
   const dispatch = useDispatch();
@@ -1240,36 +1242,38 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
 
           {/* 소개 이미지 */}
           <View>
-            <View style={{ marginBottom: 8 }}>
-              <Image
-                source={imageUri ? { uri: imageUri } : DEFAULT_IMAGE}
-                style={{
-                  width: "100%",
-                  aspectRatio: 1,
-                  borderRadius: 12,
-                }}
-                resizeMode="cover"
-              />
-
-              {/* X 버튼: 사용자가 선택한 이미지가 있을 때만 */}
-              {imageUri ? (
-                <TouchableOpacity
-                  onPress={() => setImageUri(null)}
+            <View style={{ marginBottom: 8, alignItems: "center" }}>
+              <View style={{ width: INTRO_IMAGE_MAX, height: INTRO_IMAGE_MAX }}>
+                <Image
+                  source={imageUri ? { uri: imageUri } : DEFAULT_IMAGE}
                   style={{
-                    position: "absolute",
-                    top: 6,
-                    right: 6,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    alignItems: "center",
-                    justifyContent: "center",
+                    width: INTRO_IMAGE_MAX,
+                    height: INTRO_IMAGE_MAX,
+                    borderRadius: 12,
                   }}
-                >
-                  <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>×</Text>
-                </TouchableOpacity>
-              ) : null}
+                  resizeMode="cover"
+                />
+
+                {/* X 버튼: 사용자가 선택한 이미지가 있을 때만 */}
+                {imageUri ? (
+                  <TouchableOpacity
+                    onPress={() => setImageUri(null)}
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      backgroundColor: "rgba(0,0,0,0.6)",
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}>×</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
             </View>
             <TouchableOpacity
               onPress={pickImage}

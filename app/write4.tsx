@@ -730,7 +730,7 @@ export default function AdPostWrite() {
                     />
                 </View>
 
-                {/* 상호 / 담당자 / 연락처 */}
+                {/* 상호 */}
                 <View style={cardBox}>
                     <Text style={[label, { marginBottom: 8 }]}>상호</Text>
                     <TextInput
@@ -739,31 +739,6 @@ export default function AdPostWrite() {
                         value={companyAgency}
                         onChangeText={setCompanyAgency}
                         style={[inputStyle, inputFontWeightStyle(companyAgency)]}
-                        editable={!isPreview}
-                    />
-                </View>
-
-                <View style={cardBox}>
-                    <Text style={[label, { marginBottom: 8 }]}>담당자</Text>
-                    <TextInput
-                        placeholder="예) 김대원 이사"
-                        placeholderTextColor={colors.subText}
-                        value={agent}
-                        onChangeText={setAgent}
-                        style={[inputStyle, inputFontWeightStyle(agent)]}
-                        editable={!isPreview}
-                    />
-                </View>
-
-                <View style={cardBox}>
-                    <Text style={[label, { marginBottom: 8 }]}>연락처</Text>
-                    <TextInput
-                        placeholder="예) 010-1234-5678"
-                        placeholderTextColor={colors.subText}
-                        value={agencyCall}
-                        onChangeText={v => setAgencyCall(mobile(v))}
-                        keyboardType="phone-pad"
-                        style={[inputStyle, inputFontWeightStyle(agencyCall)]}
                         editable={!isPreview}
                     />
                 </View>
@@ -858,6 +833,32 @@ export default function AdPostWrite() {
                             ) : null
                         )}
                     </View>
+                </View>
+
+                {/* 담당자 / 연락처 — 업무 분류·상세 아래 */}
+                <View style={cardBox}>
+                    <Text style={[label, { marginBottom: 8 }]}>담당자</Text>
+                    <TextInput
+                        placeholder="예) 김대원 이사"
+                        placeholderTextColor={colors.subText}
+                        value={agent}
+                        onChangeText={setAgent}
+                        style={[inputStyle, inputFontWeightStyle(agent)]}
+                        editable={!isPreview}
+                    />
+                </View>
+
+                <View style={cardBox}>
+                    <Text style={[label, { marginBottom: 8 }]}>연락처</Text>
+                    <TextInput
+                        placeholder="예) 010-1234-5678"
+                        placeholderTextColor={colors.subText}
+                        value={agencyCall}
+                        onChangeText={v => setAgencyCall(mobile(v))}
+                        keyboardType="phone-pad"
+                        style={[inputStyle, inputFontWeightStyle(agencyCall)]}
+                        editable={!isPreview}
+                    />
                 </View>
 
                 {/* 상세 내용 */}
