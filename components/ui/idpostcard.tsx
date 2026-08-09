@@ -850,7 +850,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
               }}
             >
               <Text style={{ fontSize: 17, fontWeight: "800", color: "#0B1B3A" }}>
-                AI 현장분석
+                계약을 위한 AI 실전브리핑
               </Text>
               <Pressable onPress={() => setAiOpen(false)} hitSlop={8}>
                 <Text style={{ color: "#666", fontWeight: "600" }}>닫기</Text>

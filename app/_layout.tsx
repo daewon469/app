@@ -73,14 +73,28 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!loaded) return;
+    let removeUrlListener: (() => void) | undefined;
     void (async () => {
       try {
-        const { capturePlayInstallReferralCode } = await import("../lib/referral");
+        const Linking = await import("expo-linking");
+        const {
+          capturePlayInstallReferralCode,
+          captureReferralCodeFromUrl,
+        } = await import("../lib/referral");
         await capturePlayInstallReferralCode();
+        const initialUrl = await Linking.getInitialURL();
+        await captureReferralCodeFromUrl(initialUrl);
+        const sub = Linking.addEventListener("url", ({ url }) => {
+          void captureReferralCodeFromUrl(url);
+        });
+        removeUrlListener = () => sub.remove();
       } catch {
         // ignore
       }
     })();
+    return () => {
+      removeUrlListener?.();
+    };
   }, [loaded]);
 
   useEffect(() => {

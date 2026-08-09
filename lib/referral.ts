@@ -72,6 +72,40 @@ export async function clearPendingReferralCode() {
   await SecureStore.deleteItemAsync(PENDING_REFERRAL_CODE_KEY);
 }
 
+/** 딥링크/유니버설 링크 URL에서 추천인코드 추출 */
+export function parseReferralCodeFromUrl(url: string | null | undefined): string | null {
+  const raw = String(url ?? "").trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    const fromQuery =
+      parsed.searchParams.get(REFERRAL_REFERRER_KEY) ||
+      parsed.searchParams.get("ref") ||
+      parsed.searchParams.get("code");
+    const code = String(fromQuery ?? "").trim();
+    if (code) return code;
+  } catch {
+    // custom scheme 등 URL 파서 실패 시 정규식으로 폴백
+  }
+  const m = raw.match(/[?&#](?:referral_code|ref|code)=([^&#]+)/i);
+  if (!m?.[1]) return null;
+  try {
+    return decodeURIComponent(m[1]).trim() || null;
+  } catch {
+    return m[1].trim() || null;
+  }
+}
+
+/** 딥링크 URL의 추천인코드를 pending 으로 보관 */
+export async function captureReferralCodeFromUrl(
+  url: string | null | undefined,
+): Promise<string | null> {
+  const code = parseReferralCodeFromUrl(url);
+  if (!code) return null;
+  await savePendingReferralCode(code);
+  return code;
+}
+
 /**
  * Android Play Install Referrer 에서 추천인코드를 읽어 보관합니다.
  * (네이티브 모듈이 없거나 iOS면 조용히 스킵)

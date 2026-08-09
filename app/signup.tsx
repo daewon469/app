@@ -84,11 +84,15 @@ export default function SignupScreen() {
     if (isEditMode) return;
     (async () => {
       try {
+        const Linking = await import("expo-linking");
         const {
           capturePlayInstallReferralCode,
+          captureReferralCodeFromUrl,
           loadPendingReferralCode,
         } = await import("../lib/referral");
         await capturePlayInstallReferralCode();
+        const initialUrl = await Linking.getInitialURL();
+        await captureReferralCodeFromUrl(initialUrl);
         const pending = await loadPendingReferralCode();
         if (pending) setReferralCode(pending);
       } catch {

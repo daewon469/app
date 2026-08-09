@@ -11,7 +11,7 @@ export const SITE_ANALYSIS_CHAPTER_ORDER = [
   "생활/학군",
   "미래가치",
   "투자가치",
-  "실전 브리핑",
+  "꺾기멘트",
 ] as const;
 
 function cleanAnalysisTitle(raw: string | null): string | null {
@@ -34,8 +34,14 @@ function matchCanonicalChapter(heading: string): string | null {
   if (/생활/.test(h) || /학군/.test(h)) return "생활/학군";
   if (/미래\s*가치/.test(h)) return "미래가치";
   if (/투자\s*가치/.test(h)) return "투자가치";
-  if (/실전\s*브리핑/.test(h) || /브리핑\s*멘트/.test(h) || /고객\s*맞춤형/.test(h)) {
-    return "실전 브리핑";
+  if (
+    /꺾기\s*멘트/.test(h) ||
+    /꺽기\s*멘트/.test(h) ||
+    /실전\s*브리핑/.test(h) ||
+    /브리핑\s*멘트/.test(h) ||
+    /고객\s*맞춤형/.test(h)
+  ) {
+    return "꺾기멘트";
   }
   return null;
 }

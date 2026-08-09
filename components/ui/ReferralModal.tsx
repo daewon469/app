@@ -34,10 +34,23 @@ export default function ReferralModal({
   onRecommendSms,
   colors,
 }: ReferralModalProps) {
-  const buttonTextStyle = {
+  const buttonTextBase = {
     fontWeight: "700" as const,
-    fontSize: 15,
+    fontSize: 18,
     letterSpacing: 6,
+  };
+  /** 카톡추천 — 테두리 없음 */
+  const kakaoTextStyle = {
+    ...buttonTextBase,
+    color: "#111",
+  };
+  /** 화이트 글자 → 네이비 테두리 */
+  const whiteTextOutline = {
+    ...buttonTextBase,
+    color: "#fff",
+    textShadowColor: "#0B1B3A",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 1.6,
   };
 
   return (
@@ -109,9 +122,7 @@ export default function ReferralModal({
                 alignItems: "center",
               }}
             >
-              <Text style={{ ...buttonTextStyle, color: "#111" }}>
-                {spacedLabel("카 톡  추 천")}
-              </Text>
+              <Text style={kakaoTextStyle}>{spacedLabel("카 톡  추 천")}</Text>
             </Pressable>
 
             <Pressable
@@ -123,9 +134,7 @@ export default function ReferralModal({
                 alignItems: "center",
               }}
             >
-              <Text style={{ ...buttonTextStyle, color: "#fff" }}>
-                {spacedLabel("문 자  추 천")}
-              </Text>
+              <Text style={whiteTextOutline}>{spacedLabel("문 자  추 천")}</Text>
             </Pressable>
 
             <Pressable
@@ -137,9 +146,7 @@ export default function ReferralModal({
                 alignItems: "center",
               }}
             >
-              <Text style={{ ...buttonTextStyle, color: "#fff" }}>
-                {spacedLabel("복 사   하 기")}
-              </Text>
+              <Text style={whiteTextOutline}>{spacedLabel("복 사   하 기")}</Text>
             </Pressable>
 
             <Pressable
@@ -148,14 +155,10 @@ export default function ReferralModal({
                 borderRadius: 12,
                 paddingVertical: 12,
                 alignItems: "center",
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: "#fff",
+                backgroundColor: "#6B7280",
               }}
             >
-              <Text style={{ ...buttonTextStyle, color: colors.text }}>
-                {spacedLabel("취 소")}
-              </Text>
+              <Text style={whiteTextOutline}>{spacedLabel("취 소")}</Text>
             </Pressable>
           </View>
         </Pressable>
