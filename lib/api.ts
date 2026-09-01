@@ -710,6 +710,11 @@ export type UIConfigResponse = {
       theme: "dark" | "light" | "navy";
       opacity: { dark: number; light: number; navy: number };
     };
+    /** 구인등록 이벤트(오너 일괄 설정) */
+    recruit_event?: {
+      enabled: boolean;
+      reward_point_amount: number;
+    };
   };
 };
 
@@ -731,6 +736,7 @@ export const UIConfig = {
               theme: "dark",
               opacity: { dark: 0.5, light: 0.5, navy: 0.5 },
             },
+            recruit_event: { enabled: false, reward_point_amount: 0 },
           },
         }
       );
@@ -749,6 +755,7 @@ export const UIConfig = {
             theme: "dark",
             opacity: { dark: 0.5, light: 0.5, navy: 0.5 },
           },
+          recruit_event: { enabled: false, reward_point_amount: 0 },
         },
       };
     }
@@ -768,6 +775,23 @@ export const UIConfig = {
     } catch (e: any) {
       console.error("UIConfig.update error:", e?.response?.data || e?.message || e);
       return { status: 8, config: payload };
+    }
+  },
+
+  applyRecruitEvent: async (payload: {
+    enabled: boolean;
+    reward_point_amount: number;
+  }): Promise<{
+    status: number;
+    updated_count?: number;
+    config?: UIConfigResponse["config"];
+  }> => {
+    try {
+      const { data } = await adminApi.put("/community/admin/recruit-event", payload);
+      return data ?? { status: 8, updated_count: 0 };
+    } catch (e: any) {
+      console.error("UIConfig.applyRecruitEvent error:", e?.response?.data || e?.message || e);
+      return { status: 8, updated_count: 0 };
     }
   },
 };

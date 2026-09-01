@@ -1547,17 +1547,17 @@ export default function MyPagePreview() {
                                 borderTopWidth: 1,
                                 borderTopColor: colors.border,
                             }}
-                            onPress={() => router.push("/write")}
+                            onPress={() => router.push("/recruiteventadmin")}
                         >
                             <Ionicons
-                                name="create-outline"
+                                name="gift-outline"
                                 size={20}
                                 color={colors.primary}
                                 style={{ marginRight: 10 }}
                             />
                             <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
-                                    구인등록
+                                    구인등록 이벤트
                                 </Text>
                             </View>
                             <Ionicons name="chevron-forward" size={18} color={colors.subText} />

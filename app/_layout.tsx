@@ -293,6 +293,7 @@ export default function RootLayout() {
                 <Stack.Screen name="todaystatus" options={{ title: "오늘의 현황", headerBackButtonDisplayMode: "minimal" }} />
                 <Stack.Screen name="todayreferr" options={{ title: "추천 현황", headerBackButtonDisplayMode: "minimal" }} />
                 <Stack.Screen name="todayreferrDetail" options={{ title: "추천 상세", headerBackButtonDisplayMode: "minimal" }} />
+                <Stack.Screen name="recruiteventadmin" options={{ title: "구인등록 이벤트", headerBackButtonDisplayMode: "minimal" }} />
 
 
               </Stack>
