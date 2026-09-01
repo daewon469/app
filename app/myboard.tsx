@@ -1547,6 +1547,30 @@ export default function MyPagePreview() {
                                 borderTopWidth: 1,
                                 borderTopColor: colors.border,
                             }}
+                            onPress={() => router.push("/write")}
+                        >
+                            <Ionicons
+                                name="create-outline"
+                                size={20}
+                                color={colors.primary}
+                                style={{ marginRight: 10 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                    구인등록
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                        </Pressable>
+
+                        <Pressable
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                paddingVertical: 10,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
                             onPress={() => router.push("/adminusers")}
                         >
                             <Ionicons

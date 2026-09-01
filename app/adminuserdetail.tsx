@@ -163,6 +163,7 @@ export default function AdminUserDetailReadonlyScreen() {
         <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
           <Card title="기본 정보">
             <Row label="닉네임" value={String(user?.nickname ?? target ?? "")} />
+            <Row label="성함" value={String(user?.name ?? "-")} />
             <Row label="가입일" value={user?.signup_date ?? "-"} />
             <Row label="등급" value={getUserGradeLabel(user?.user_grade ?? -1)} />
             <Row label="휴대폰" value={formatKoreanPhone(user?.phone_number ?? "")} />

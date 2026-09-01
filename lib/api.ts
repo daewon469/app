@@ -213,6 +213,10 @@ export type ReferralStatusDetailItem = {
   B_username: string | null;
   A_phone_number: string | null;
   B_phone_number?: string | null;
+  A_user_id?: number | null;
+  B_user_id?: number | null;
+  A_withdrawn?: boolean;
+  B_withdrawn?: boolean;
   date: string;
 };
 
@@ -343,6 +347,8 @@ export type Post = {
   other_role_fee?: string | null;
   post_type?: number;
   card_type?: number;
+  reward_point_amount?: number | null;
+  is_event?: boolean | null;
   // 서버가 추가로 내려주는 확장 필드(화면 조건 렌더링 용)
   is_owner?: boolean;
   community?: { is_owner?: boolean } | null;
@@ -1180,6 +1186,7 @@ export const Posts = {
     cursor?: PostListCursor;
     limit?: number;
     status?: string;
+    scope?: "mine" | "owners" | "all";
   }) => {
     try {
       const query = new URLSearchParams();
@@ -1187,6 +1194,7 @@ export const Posts = {
       if (params?.cursor) query.append("cursor", params.cursor);
       if (params?.limit) query.append("limit", String(params.limit));
       if (params?.status) query.append("status", params.status);
+      if (params?.scope) query.append("scope", params.scope);
 
       const { data } = await api.get(
         `/community/posts/type/${postType}/my/${encodeURIComponent(username)}?${query.toString()}`

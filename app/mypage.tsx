@@ -42,6 +42,7 @@ export default function MyPage() {
 
   const [me, setMe] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [ownerScope, setOwnerScope] = useState<"owners" | "all">("owners");
   const [tab, setTab] = useState<(StatusType | "all")>("all");
   const [items, setItems] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -92,6 +93,7 @@ const fetchList = useCallback(
           status: tab === "all" ? undefined : tab,
           cursor: reset ? undefined : cursor,
           limit: 20,
+          scope: isOwner ? ownerScope : "mine",
         }
       );
 
@@ -103,7 +105,7 @@ const fetchList = useCallback(
       setLoading(false);
     }
   },
-  [tab, cursor, items, me, loading]
+  [tab, cursor, items, me, loading, isOwner, ownerScope]
 );
 
   useEffect(() => {
@@ -111,7 +113,7 @@ const fetchList = useCallback(
     setCursor(undefined);
     setItems([]);
     fetchList(true);
-  }, [tab, me]); 
+  }, [tab, me, ownerScope, isOwner]); 
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -290,6 +292,22 @@ const fetchList = useCallback(
 
   return (
     <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
+      {isOwner && (
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+          <Tab
+            active={ownerScope === "owners"}
+            label="오너작성글"
+            onPress={() => setOwnerScope("owners")}
+            colors={colors}
+          />
+          <Tab
+            active={ownerScope === "all"}
+            label="전체작성글"
+            onPress={() => setOwnerScope("all")}
+            colors={colors}
+          />
+        </View>
+      )}
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
         {STATUS_TABS.map((s) => (
           <Tab

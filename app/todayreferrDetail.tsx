@@ -142,7 +142,7 @@ export default function TodayReferrDetailScreen() {
               fontWeight: "400",
             }}
           >
-            A 회원 신규 가입 시 B 회원 추천
+            A 회원 신규 가입 시 B 회원 추천 · 탈퇴 회원은 (탈퇴 #회원ID)로 표시
           </Text>
         </View>
 
@@ -243,6 +243,8 @@ export default function TodayReferrDetailScreen() {
 
               {items.map((it, idx) => {
                 const phoneText = formatKoreanPhone(it.B_phone_number ?? it.A_phone_number);
+                const aWithdrawn = !!it.A_withdrawn || String(it.A_username ?? "").startsWith("(탈퇴");
+                const bWithdrawn = !!it.B_withdrawn || String(it.B_username ?? "").startsWith("(탈퇴");
                 return (
                   <View
                     key={`${it.A_username ?? "A"}-${it.B_username ?? "B"}-${it.B_phone_number ?? it.A_phone_number ?? ""}-${idx}`}
@@ -254,13 +256,14 @@ export default function TodayReferrDetailScreen() {
                       paddingRight: 6,
                       borderBottomWidth: idx === items.length - 1 ? 0 : 1,
                       borderBottomColor: colors.divider,
+                      backgroundColor: aWithdrawn || bWithdrawn ? "#FFF8F0" : undefined,
                     }}
                   >
                     <Text
                       style={{
                         flex: 1.25,
                         paddingRight: 8,
-                        color: colors.text,
+                        color: aWithdrawn ? "#C2410C" : colors.text,
                         fontSize: 13,
                         fontWeight: "800",
                         lineHeight: CELL_LINE_HEIGHT,
@@ -274,7 +277,7 @@ export default function TodayReferrDetailScreen() {
                       style={{
                         flex: 1.25,
                         paddingRight: 8,
-                        color: colors.text,
+                        color: bWithdrawn ? "#C2410C" : colors.text,
                         fontSize: 13,
                         fontWeight: "800",
                         lineHeight: CELL_LINE_HEIGHT,
@@ -302,7 +305,7 @@ export default function TodayReferrDetailScreen() {
                         }}
                         numberOfLines={CELL_MAX_LINES}
                       >
-                        {phoneText}
+                        {phoneText || (bWithdrawn ? "(탈퇴)" : "")}
                       </Text>
                     </Pressable>
                   </View>

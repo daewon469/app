@@ -40,7 +40,7 @@ export async function requestSiteAnalysis(
       ok?: boolean;
       analysis?: string;
       error?: string;
-    }>("/community/ai/site-analysis", payload, { timeout: 90_000 });
+    }>("/community/ai/site-analysis", payload, { timeout: 60_000 });
     if (!data?.ok || !data.analysis) {
       return { ok: false, error: data?.error || "AI 분석에 실패했습니다." };
     }

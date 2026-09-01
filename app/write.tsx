@@ -13,7 +13,7 @@ import BusinessPicker from "../components/BusinessMapPicker";
 import ScrollNavigator from "../components/ScrollNavigator";
 import NaverMap from "../components/ui/navermap";
 import WorkPicker from "../components/WorkMapPicker";
-import { API_URL, Posts, type StatusType } from "../lib/api";
+import { API_URL, Auth, Posts, type StatusType } from "../lib/api";
 import { RootState } from "../store";
 import { setBusinessLocation, setWorkLocation } from "../store/LocationSlice";
 import { inputFontWeightStyle, PLACEHOLDER_FONT_WEIGHT } from "../utils/inputStyle";
@@ -162,6 +162,9 @@ export default function PostWrite() {
   const [onetoking, setOneToking] = useState<string | undefined>(undefined);
   const [siteName, setSiteName] = useState<string | undefined>(undefined);
   const [textColor, setTextColor] = useState("#111111");
+  const [isOwner, setIsOwner] = useState(false);
+  const [rewardPointAmount, setRewardPointAmount] = useState("");
+  const [isEvent, setIsEvent] = useState(false);
 
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showBizModal, setShowBizModal] = useState(false);
@@ -673,6 +676,19 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
     };
   }, [id, title, content, onetoking, textColor, saveDraftNow]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const username = await SecureStore.getItemAsync("username");
+        if (!username) return;
+        const summary = await Auth.getMyPageSummary(username);
+        setIsOwner(summary.status === 0 && !!summary.is_owner);
+      } catch {
+        setIsOwner(false);
+      }
+    })();
+  }, []);
+
   // 화면 이탈(언마운트) 시: 즉시 저장
   useEffect(() => {
     return () => {
@@ -728,6 +744,10 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
           setHouseSupport(!!data.house_support);
           setOneToking(data.highlight_content ?? undefined);
           setSiteName(data.site_name ?? undefined);
+          setRewardPointAmount(
+            data.reward_point_amount != null ? String(data.reward_point_amount) : "",
+          );
+          setIsEvent(!!data.is_event);
           setTextColor(normalizeTokingColor(data.highlight_color ?? "#111111"));
           setAgencyMan(data.agent ?? undefined);
           setSelectedRegion(normalizeRegionValue((data as any).province, (data as any).city));
@@ -1032,6 +1052,13 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
         card_type: cardType,
 
       };
+
+      if (isOwner) {
+        const amount = Number(rewardPointAmount);
+        (payload as any).reward_point_amount =
+          Number.isFinite(amount) && amount >= 0 ? amount : 0;
+        (payload as any).is_event = isEvent;
+      }
 
       if (id) {
         await Posts.update(Number(id), payload);
@@ -1356,6 +1383,48 @@ const formatRegionLabel = (region: { province: string; city: string } | null | u
               style={[inputStyle, inputFontWeightStyle(siteName)]}
             />
           </View>
+
+          {isOwner ? (
+            <View style={{ marginTop: 16, gap: 12 }}>
+              <View>
+                <Text style={[label, { fontWeight: "700", fontSize: 15, marginBottom: 8 }]}>
+                  지급 포인트 금액
+                </Text>
+                <TextInput
+                  placeholderTextColor={placeholder}
+                  value={rewardPointAmount}
+                  keyboardType="number-pad"
+                  onChangeText={setRewardPointAmount}
+                  placeholder="예: 1000"
+                  style={inputStyle}
+                />
+              </View>
+              <View>
+                <Text style={[label, { fontWeight: "700", fontSize: 15, marginBottom: 8 }]}>
+                  이벤트 여부
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsEvent((v) => !v)}
+                  style={[
+                    inputStyle,
+                    {
+                      justifyContent: "center",
+                      backgroundColor: isEvent ? "#EEF4FF" : "#f9f9f9",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      fontWeight: "700",
+                      color: isEvent ? colors.primary : "#666",
+                    }}
+                  >
+                    {isEvent ? "이벤트 적용 중" : "이벤트 아님"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
 
           {/* 업종 */}
           <View style={{ marginTop: 10 }}>
