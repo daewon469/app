@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
 import RegionSelectModal from "../components/RegionSelectModal";
 import ScrollNavigator from "../components/ScrollNavigator";
 import { Auth } from "../lib/api";
@@ -79,6 +79,16 @@ export default function SignupScreen() {
     }),
     [contentHeight, layoutHeight]
   );
+
+  const setMeasuredContentHeight = useCallback((h: number) => {
+    const next = Math.max(1, Math.round(h));
+    setContentHeight((prev) => (Math.abs(prev - next) < 2 ? prev : next));
+  }, []);
+
+  const setMeasuredLayoutHeight = useCallback((h: number) => {
+    const next = Math.max(1, Math.round(h));
+    setLayoutHeight((prev) => (Math.abs(prev - next) < 2 ? prev : next));
+  }, []);
 
   useEffect(() => {
     if (isEditMode) return;
@@ -384,16 +394,18 @@ export default function SignupScreen() {
   } as const;
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.select({ ios: "padding", android: "height" }) as any}
-      keyboardVerticalOffset={100}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Animated.ScrollView
         ref={scrollRef}
+        style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16, gap: 12, backgroundColor: colors.background, paddingBottom: 40 }}
-        onContentSizeChange={(_, h) => setContentHeight(h)}
-        onLayout={(e) => setLayoutHeight(e.nativeEvent.layout.height)}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+        bounces={false}
+        overScrollMode="never"
+        onContentSizeChange={(_, h) => setMeasuredContentHeight(h)}
+        onLayout={(e) => setMeasuredLayoutHeight(e.nativeEvent.layout.height)}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -668,6 +680,6 @@ export default function SignupScreen() {
         barWidth={4}
         showButtons={false}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }

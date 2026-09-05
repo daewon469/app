@@ -142,7 +142,7 @@ export default function TodayReferrDetailScreen() {
               fontWeight: "400",
             }}
           >
-            A 회원 신규 가입 시 B 회원 추천 · 탈퇴 회원은 (탈퇴 #회원ID)로 표시
+            A 회원 신규 가입 시 B 회원 추천 · 탈퇴 회원은 (탈퇴)로 표시
           </Text>
         </View>
 

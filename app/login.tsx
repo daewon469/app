@@ -7,7 +7,6 @@ import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useRef, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -88,14 +87,16 @@ export default function LoginScreen() {
   }, [username, password, loading]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.select({ ios: "padding", android: "height" }) as "padding" | "height"}
-      keyboardVerticalOffset={100}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
-        contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 16, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+        bounces={false}
+        alwaysBounceVertical={false}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
       >
         <View>
@@ -194,7 +195,7 @@ export default function LoginScreen() {
           </Link>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
