@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Card } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Auth, resolveMediaUrl, type Post } from "../../lib/api";
 import { postToSiteAnalysisPayload, requestSiteAnalysis } from "../../utils/siteAnalysis";
 import { parseSiteAnalysisSections } from "../../utils/siteAnalysisPrompt";
@@ -76,6 +77,7 @@ function OutlinedActionText({
 const screenWidth = Dimensions.get("window").width;
 
 export default function Postcard_detail({ post }: { post: Post }) {
+  const insets = useSafeAreaInsets();
   const [showWorkModal, setShowWorkModal] = useState(false);
   const [showBizModal, setShowBizModal] = useState(false);
   const [imageZoomVisible, setImageZoomVisible] = useState(false);
@@ -92,7 +94,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
   const [me, setMe] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
-  const actionBarHeight = BASE_ACTION_BAR_HEIGHT + (canEdit ? EDIT_ROW_HEIGHT : 0);
+  const actionBarHeight = BASE_ACTION_BAR_HEIGHT + (canEdit ? EDIT_ROW_HEIGHT : 0) + insets.bottom;
   const [showActionBar, setShowActionBar] = useState(false);
   const lastScrollYRef = useRef(0);
   const draggingRef = useRef(false);
@@ -1019,6 +1021,7 @@ export default function Postcard_detail({ post }: { post: Post }) {
           borderTopColor: "#000",
           paddingHorizontal: 12,
           paddingVertical: 3,
+          paddingBottom: insets.bottom,
           justifyContent: "center",
           transform: [{ translateY: actionBarTranslateY }],
         }}

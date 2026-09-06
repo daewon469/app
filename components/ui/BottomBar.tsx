@@ -88,7 +88,7 @@ export default function BottomBar({ onToggleMapSearch, onPressRegionSearch }: Pr
   }, []);
 
   return (
-    <SafeAreaView style={{ paddingBottom: 0 }} edges={['bottom']}>
+    <SafeAreaView style={{ backgroundColor: BAR_BG_COLOR }} edges={['bottom']}>
       <Appbar.Header
         mode="center-aligned"
         statusBarHeight={0}

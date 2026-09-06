@@ -36,7 +36,8 @@ const config: ExpoConfig = {
     },
     package: "com.smartgauge.bunyangpro",
     permissions: ["POST_NOTIFICATIONS"],
-
+    // API 36부터 edge-to-edge가 강제되므로 네이티브 설정과 맞춤
+    edgeToEdgeEnabled: true
   },
   notification: {
     "icon": "./assets/images/notification-icon.png",
@@ -64,13 +65,14 @@ const config: ExpoConfig = {
       "expo-build-properties",
       {
         android: {
-          compileSdkVersion: 35,
-          targetSdkVersion: 35,
-          buildToolsVersion: "35.0.0",
+          compileSdkVersion: 36,
+          targetSdkVersion: 36,
+          buildToolsVersion: "36.0.0",
           kotlinVersion: "2.0.21"
         }
       }
     ],
+    ["./plugins/withCustomAgp", { version: "8.9.2" }],
     "./plugins/withAndroidXBrowserVersion",
     "expo-dev-client",
     "expo-secure-store"

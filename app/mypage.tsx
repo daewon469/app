@@ -29,7 +29,6 @@ const STATUS_TABS: (StatusType | "all")[] = ["all", "published", "closed"];
 
 export default function MyPage() {
   const insets = useSafeAreaInsets();
-  const BOTTOM_BAR_HEIGHT = 61;
 
   const colors = {
     background: "#fff",
@@ -42,7 +41,8 @@ export default function MyPage() {
 
   const [me, setMe] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [ownerScope, setOwnerScope] = useState<"owners" | "all">("owners");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ownerScope, setOwnerScope] = useState<"mine" | "all">("all");
   const [tab, setTab] = useState<(StatusType | "all")>("all");
   const [items, setItems] = useState<Post[]>([]);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
@@ -51,6 +51,7 @@ export default function MyPage() {
   const [repostingId, setRepostingId] = useState<number | null>(null);
   const [recreateTarget, setRecreateTarget] = useState<Post | null>(null);
   const [recreateAuthor, setRecreateAuthor] = useState("");
+  const canManageAll = isOwner || isAdmin;
 
   const scrollRef = useRef<any>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -73,9 +74,12 @@ export default function MyPage() {
       setMe(s.username);
       try {
         const summary = await Auth.getMyPageSummary(s.username);
-        setIsOwner(summary.status === 0 && !!summary.is_owner);
+        const ok = summary.status === 0;
+        setIsOwner(ok && !!summary.is_owner);
+        setIsAdmin(ok && !!summary.admin_acknowledged);
       } catch {
         setIsOwner(false);
+        setIsAdmin(false);
       }
     })();
   }, []);
@@ -93,7 +97,7 @@ const fetchList = useCallback(
           status: tab === "all" ? undefined : tab,
           cursor: reset ? undefined : cursor,
           limit: 20,
-          scope: isOwner ? ownerScope : "mine",
+          scope: canManageAll ? ownerScope : "mine",
         }
       );
 
@@ -105,7 +109,7 @@ const fetchList = useCallback(
       setLoading(false);
     }
   },
-  [tab, cursor, items, me, loading, isOwner, ownerScope]
+  [tab, cursor, items, me, loading, canManageAll, ownerScope]
 );
 
   useEffect(() => {
@@ -113,7 +117,7 @@ const fetchList = useCallback(
     setCursor(undefined);
     setItems([]);
     fetchList(true);
-  }, [tab, me, ownerScope, isOwner]); 
+  }, [tab, me, ownerScope, canManageAll]); 
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -291,24 +295,15 @@ const fetchList = useCallback(
   );
 
   return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
-      {isOwner && (
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-          <Tab
-            active={ownerScope === "owners"}
-            label="오너작성글"
-            onPress={() => setOwnerScope("owners")}
-            colors={colors}
-          />
-          <Tab
-            active={ownerScope === "all"}
-            label="전체작성글"
-            onPress={() => setOwnerScope("all")}
-            colors={colors}
-          />
-        </View>
-      )}
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+    <View
+      style={{
+        flex: 1,
+        padding: 16,
+        paddingBottom: 16 + (insets.bottom ?? 0),
+        backgroundColor: colors.background,
+      }}
+    >
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
         {STATUS_TABS.map((s) => (
           <Tab
             key={s}
@@ -318,6 +313,14 @@ const fetchList = useCallback(
             colors={colors}
           />
         ))}
+        {canManageAll && (
+          <Tab
+            active={ownerScope === "mine"}
+            label="내글보기"
+            onPress={() => setOwnerScope((prev) => (prev === "mine" ? "all" : "mine"))}
+            colors={colors}
+          />
+        )}
       </View>
 
       <Animated.FlatList
@@ -325,7 +328,7 @@ const fetchList = useCallback(
         data={items}
         keyExtractor={(p) => String(p.id)}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         onEndReachedThreshold={0.2}
         onEndReached={loadMore}
         showsVerticalScrollIndicator={false}
@@ -364,7 +367,7 @@ const fetchList = useCallback(
             animated: true,
           })
         }
-        bottomOffset={BOTTOM_BAR_HEIGHT + insets.bottom}
+        bottomOffset={0}
         topOffset={0}
         trackOpacity={0.6}
         thumbOpacity={1.0}
@@ -467,7 +470,7 @@ function Tab({
       onPress={onPress}
       style={{
         paddingVertical: 8,
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
         borderRadius: 999,
         backgroundColor: active ? colors.primary : colors.card,
         borderWidth: 1,

@@ -295,7 +295,7 @@ export default function AdScreen() {
             return (
               <View style={{ width: PAGE_WIDTH }}>
                 <Animated.ScrollView
-                  contentContainerStyle={{ paddingBottom: 24, paddingTop: 3 }}
+                  contentContainerStyle={{ paddingBottom: 24 + (insets.bottom ?? 0), paddingTop: 3 }}
                   showsVerticalScrollIndicator={false}
                   ref={(r) => {
                     pageScrollRefs.current[index] = r;
@@ -349,6 +349,20 @@ export default function AdScreen() {
                           {item.card_type === 3 ? <AdCardTitleOnly item={item} /> : <AdCardSlim item={item} />}
                         </View>
                       )}
+                      ListEmptyComponent={
+                        !loading ? (
+                          <Text
+                            style={{
+                              textAlign: "center",
+                              color: "#666",
+                              marginTop: 40,
+                              fontSize: 14,
+                            }}
+                          >
+                            작성된 글이 없습니다.
+                          </Text>
+                        ) : null
+                      }
                       ListFooterComponent={
                         loadingMore ? (
                           <View style={{ paddingVertical: 16 }}>

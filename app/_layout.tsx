@@ -14,6 +14,7 @@ import 'react-native-reanimated';
 import { Provider } from 'react-redux';
 import ForceUpdateModal from "../components/ui/ForceUpdateModal";
 import TopBar from "../components/ui/Topbar";
+import { useDoubleBackToExit } from "../hooks/useDoubleBackToExit";
 import { AppMeta, Notify } from "../lib/api";
 import { store } from "../store";
 import { compareVersions } from "../utils/compareVersions";
@@ -56,6 +57,7 @@ if (isPushNotificationsSupported) {
 }
 
 export default function RootLayout() {
+  useDoubleBackToExit();
   const [forceUpdateVisible, setForceUpdateVisible] = useState(false);
   const [forceUpdateInfo, setForceUpdateInfo] = useState<{
     currentVersion?: string | null;

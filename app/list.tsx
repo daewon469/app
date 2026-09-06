@@ -9,7 +9,7 @@ import { Image as ExpoImage } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Animated, BackHandler, Easing, FlatList, Image, Linking, Modal, Platform, Pressable, RefreshControl, Text as RNText, Share, ToastAndroid, TouchableOpacity, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
+import { ActivityIndicator, Alert, Animated, BackHandler, Easing, FlatList, Image, Linking, Modal, Platform, Pressable, RefreshControl, Text as RNText, Share, TouchableOpacity, useWindowDimensions, View, type TextStyle, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import CustomFilterModal, { type CustomFilterValue } from "../components/customfilter";
@@ -473,14 +473,12 @@ export default function Postlist() {
   const BOTTOM_BAR_HEIGHT = 61;
   const FLOATING_EXTRA_GAP = 16; // 12~20 권장
   const floatingBottom = useMemo(() => {
-    if (!IS_IOS) return 0;
-    // iOS: bottom = tabBarHeight + safeAreaBottom + extraGap
+    // iOS/Android 모두 하단 세이프티 바(홈 인디케이터/제스처바) 위로 올림
     return BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + FLOATING_EXTRA_GAP;
-  }, [BOTTOM_BAR_HEIGHT, FLOATING_EXTRA_GAP, IS_IOS, insets?.bottom]);
+  }, [BOTTOM_BAR_HEIGHT, FLOATING_EXTRA_GAP, insets?.bottom]);
   const scrollNavBottomOffset = useMemo(() => {
-    // 스크롤 트랙도 iOS에서는 홈 인디케이터/탭바를 침범하지 않도록 safe area를 포함
-    return BOTTOM_BAR_HEIGHT + (IS_IOS ? (insets?.bottom ?? 0) : 0) + 2;
-  }, [BOTTOM_BAR_HEIGHT, IS_IOS, insets?.bottom]);
+    return BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + 2;
+  }, [BOTTOM_BAR_HEIGHT, insets?.bottom]);
   const isScrollable = useMemo(() => contentHeight > layoutHeight + 20, [contentHeight, layoutHeight]);
   const [mapSearchOpen, setMapSearchOpen] = useState(false);
   const [mapSelectedPostId, setMapSelectedPostId] = useState<string | null>(null);
@@ -494,7 +492,6 @@ export default function Postlist() {
   const [loading, setLoading] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const listRef = useRef<FlatList>(null);
-  const lastBackPressed = useRef<number>(0);
   const [uiConfig, setUiConfig] = useState<{
     banner: {
       enabled: boolean;
@@ -601,31 +598,14 @@ export default function Postlist() {
       })();
 
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-        const now = Date.now();
-
-        // 지도검색 오버레이가 열려있으면 먼저 닫기
+        // 지도검색 오버레이가 열려있으면 먼저 닫고, 종료는 전역 훅이 담당
         if (mapSearchOpen) {
           setMapSearchOpen(false);
           setMapSelectedPostId(null);
           return true;
         }
 
-        // 2초 안에 두 번이면 종료
-        if (now - lastBackPressed.current < 2000) {
-          BackHandler.exitApp();
-          return true;
-        }
-
-        lastBackPressed.current = now;
-
-        // 첫 번째는 안내 토스트
-        ToastAndroid.showWithGravity(
-          "두 번 누르면 종료됩니다.",
-          ToastAndroid.SHORT,
-          ToastAndroid.BOTTOM
-        );
-
-        return true; // 기본 뒤로가기 막기
+        return false;
       });
 
       return () => {
@@ -2060,7 +2040,7 @@ export default function Postlist() {
         }}
         showsVerticalScrollIndicator={false}
         style={{ flex: 1, backgroundColor: "#fff", paddingTop: 0 }}
-        contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + 2 }}
+        contentContainerStyle={{ paddingBottom: BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + 2 }}
         data={listFeedItems}
         ref={listRef}
         keyExtractor={listKeyExtractor}
@@ -2597,7 +2577,7 @@ export default function Postlist() {
               style={{
                 position: "absolute",
                 right: 23,
-                bottom: BOTTOM_BAR_HEIGHT + 14 + 50 + 30 + 3,
+                bottom: BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + 14 + 50 + 30 + 3,
                 zIndex: 80,
               }}
             >
@@ -2719,7 +2699,7 @@ export default function Postlist() {
               style={{
                 position: "absolute",
                 right: 23,
-                bottom: BOTTOM_BAR_HEIGHT + 10 + 50 + 30 + 66,
+                bottom: BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + 10 + 50 + 30 + 66,
                 zIndex: 81,
               }}
             >
@@ -2817,7 +2797,7 @@ export default function Postlist() {
             left: 0,
             right: 0,
             top: 0,
-            bottom: BOTTOM_BAR_HEIGHT,
+            bottom: BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0),
             zIndex: 50,
           }}
         >
