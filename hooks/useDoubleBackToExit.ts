@@ -14,21 +14,29 @@ export function useDoubleBackToExit() {
     if (Platform.OS !== "android") return;
 
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (pathname !== HOME_PATH) {
-        lastBackPressed.current = 0;
-        router.replace(HOME_PATH);
+      const onHome = pathname === HOME_PATH;
+
+      // 홈은 히스토리가 있어도 종료만 담당 (한 번에 pop 되며 앱이 꺼지지 않게)
+      if (onHome) {
+        const now = Date.now();
+        if (now - lastBackPressed.current < EXIT_WINDOW_MS) {
+          lastBackPressed.current = 0;
+          BackHandler.exitApp();
+          return true;
+        }
+        lastBackPressed.current = now;
+        ToastAndroid.show(EXIT_HINT, ToastAndroid.SHORT);
         return true;
       }
 
-      const now = Date.now();
-      if (now - lastBackPressed.current < EXIT_WINDOW_MS) {
+      if (router.canGoBack()) {
         lastBackPressed.current = 0;
-        BackHandler.exitApp();
+        router.back();
         return true;
       }
 
-      lastBackPressed.current = now;
-      ToastAndroid.show(EXIT_HINT, ToastAndroid.SHORT);
+      lastBackPressed.current = 0;
+      router.replace(HOME_PATH);
       return true;
     });
 

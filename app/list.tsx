@@ -492,6 +492,9 @@ export default function Postlist() {
   const [loading, setLoading] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   const listRef = useRef<FlatList>(null);
+  const lastBackPressed = useRef<number>(0);
+  const exitHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [exitHintVisible, setExitHintVisible] = useState(false);
   const [uiConfig, setUiConfig] = useState<{
     banner: {
       enabled: boolean;
@@ -598,18 +601,30 @@ export default function Postlist() {
       })();
 
       const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-        // 지도검색 오버레이가 열려있으면 먼저 닫고, 종료는 전역 훅이 담당
         if (mapSearchOpen) {
           setMapSearchOpen(false);
           setMapSelectedPostId(null);
           return true;
         }
 
-        return false;
+        const now = Date.now();
+        if (now - lastBackPressed.current < 2000) {
+          if (exitHintTimerRef.current) clearTimeout(exitHintTimerRef.current);
+          setExitHintVisible(false);
+          BackHandler.exitApp();
+          return true;
+        }
+
+        lastBackPressed.current = now;
+        setExitHintVisible(true);
+        if (exitHintTimerRef.current) clearTimeout(exitHintTimerRef.current);
+        exitHintTimerRef.current = setTimeout(() => setExitHintVisible(false), 2000);
+        return true;
       });
 
       return () => {
         alive = false;
+        if (exitHintTimerRef.current) clearTimeout(exitHintTimerRef.current);
         sub.remove();
       };
     }, [mapSearchOpen])
@@ -2944,6 +2959,28 @@ export default function Postlist() {
               </View>
             ) : null}
           </View>
+        </View>
+      ) : null}
+
+      {exitHintVisible ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute",
+            left: 24,
+            right: 24,
+            bottom: BOTTOM_BAR_HEIGHT + (insets?.bottom ?? 0) + 12,
+            zIndex: 200,
+            backgroundColor: "rgba(17,17,17,0.88)",
+            borderRadius: 10,
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>
+            한번 더 클릭하면 종료됩니다.
+          </Text>
         </View>
       ) : null}
 

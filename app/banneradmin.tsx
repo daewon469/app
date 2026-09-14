@@ -190,6 +190,16 @@ export default function BannerAdmin() {
     [pickImageAndUpload, saving],
   );
 
+  const moveItem = useCallback((from: number, to: number) => {
+    setItems((prev) => {
+      if (to < 0 || to >= prev.length || from === to) return prev;
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  }, []);
+
   const onRemoveSlotImage = useCallback(
     (idx: number) => {
       const cur = items?.[idx];
@@ -336,7 +346,7 @@ export default function BannerAdmin() {
           </Pressable>
 
           <Text style={{ fontWeight: "900", marginBottom: 10 }}>
-            배너 종류: {items.length}개 (업로드한 순서대로 돌아갑니다)
+            배너 종류: {items.length}개 (위/아래로 순서를 바꿀 수 있습니다)
           </Text>
 
           {(items || []).map((it, idx) => (
@@ -351,7 +361,42 @@ export default function BannerAdmin() {
                 backgroundColor: "#fff",
               }}
             >
-              <Text style={{ fontWeight: "900", marginBottom: 8 }}>배너 {idx + 1}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <Text style={{ fontWeight: "900" }}>배너 {idx + 1}</Text>
+                <View style={{ flexDirection: "row", marginLeft: "auto" }}>
+                  <Pressable
+                    onPress={() => moveItem(idx, idx - 1)}
+                    disabled={idx === 0}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: "#000",
+                      backgroundColor: idx === 0 ? "#eee" : "#EAF0FF",
+                      opacity: idx === 0 ? 0.55 : 1,
+                      marginRight: 8,
+                    }}
+                  >
+                    <Text style={{ fontWeight: "900" }}>위로</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => moveItem(idx, idx + 1)}
+                    disabled={idx === items.length - 1}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: "#000",
+                      backgroundColor: idx === items.length - 1 ? "#eee" : "#EAF0FF",
+                      opacity: idx === items.length - 1 ? 0.55 : 1,
+                    }}
+                  >
+                    <Text style={{ fontWeight: "900" }}>아래로</Text>
+                  </Pressable>
+                </View>
+              </View>
               {/* 목록 노출 기준 미리보기(배너별 설정) */}
               <View style={{ alignItems: "center" }}>
                 <Pressable
