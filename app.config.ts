@@ -74,6 +74,7 @@ const config: ExpoConfig = {
     ],
     ["./plugins/withCustomAgp", { version: "8.9.2" }],
     "./plugins/withAndroidXBrowserVersion",
+    "./plugins/withDisablePredictiveBack",
     "expo-dev-client",
     "expo-secure-store"
   ],

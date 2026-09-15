@@ -8,13 +8,15 @@ const HOME_PATH = "/list";
 
 export function useDoubleBackToExit() {
   const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
   const lastBackPressed = useRef(0);
+  pathnameRef.current = pathname;
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
 
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      const onHome = pathname === HOME_PATH;
+      const onHome = pathnameRef.current === HOME_PATH;
 
       // 홈은 히스토리가 있어도 종료만 담당 (한 번에 pop 되며 앱이 꺼지지 않게)
       if (onHome) {
@@ -41,5 +43,5 @@ export function useDoubleBackToExit() {
     });
 
     return () => sub.remove();
-  }, [pathname]);
+  }, []);
 }
