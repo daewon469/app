@@ -49,44 +49,31 @@ export default function RecruitEventAdmin() {
     void load();
   }, [load]);
 
-  const onApply = () => {
+  const onApply = async () => {
     const amount = Number(rewardPointAmount);
     if (!Number.isFinite(amount) || amount < 0) {
       Alert.alert("입력 오류", "지급 포인트는 0 이상의 숫자여야 합니다.");
       return;
     }
 
-    Alert.alert(
-      "저장",
-      "이벤트 표시와 지급 금액을 저장합니다.\n이미 올라간 구인글에도 표시가 반영되지만, 포인트는 이후 새로 등록하는 구인글에만 지급됩니다.",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "저장",
-          onPress: async () => {
-            setSaving(true);
-            try {
-              const res = await UIConfig.applyRecruitEvent({
-                enabled,
-                reward_point_amount: Math.floor(amount),
-              });
-              if (res.status !== 0) {
-                Alert.alert("오류", "저장에 실패했습니다.");
-                return;
-              }
-              Alert.alert(
-                "완료",
-                `저장되었습니다.\n구인글 ${res.updated_count ?? 0}건의 이벤트 표시가 반영되었습니다.\n포인트는 이후 새 구인글 등록 시에만 지급됩니다.`,
-              );
-            } catch {
-              Alert.alert("오류", "저장에 실패했습니다.");
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ],
-    );
+    setSaving(true);
+    try {
+      const res = await UIConfig.applyRecruitEvent({
+        enabled,
+        reward_point_amount: Math.floor(amount),
+      });
+      if (res.status !== 0) {
+        Alert.alert("오류", "저장에 실패했습니다.");
+        return;
+      }
+      Alert.alert("안내", "저장되었습니다.", [
+        { text: "확인", onPress: () => router.replace("/myboard") },
+      ]);
+    } catch {
+      Alert.alert("오류", "저장에 실패했습니다.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

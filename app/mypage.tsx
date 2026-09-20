@@ -1,3 +1,4 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -52,6 +53,8 @@ export default function MyPage() {
   const [recreateTarget, setRecreateTarget] = useState<Post | null>(null);
   const [recreateAuthor, setRecreateAuthor] = useState("");
   const canManageAll = isOwner || isAdmin;
+  const loadingRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const scrollRef = useRef<any>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -71,7 +74,6 @@ export default function MyPage() {
         router.replace("/login");
         return;
       }
-      setMe(s.username);
       try {
         const summary = await Auth.getMyPageSummary(s.username);
         const ok = summary.status === 0;
@@ -81,16 +83,28 @@ export default function MyPage() {
         setIsOwner(false);
         setIsAdmin(false);
       }
+      setMe(s.username);
     })();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      setTab("all");
+      setOwnerScope("all");
+    }, [])
+  );
+
 const fetchList = useCallback(
   async (reset = false) => {
-    if (loading || !me) return;
+    if (!me) return;
+    if (!reset && loadingRef.current) return;
+
+    const reqId = ++requestIdRef.current;
+    loadingRef.current = true;
     setLoading(true);
 
     try {
-      const { items: list, next_cursor } = await Posts.mylist(
+      const res = await Posts.mylist(
         1, 
         me,
         {
@@ -100,16 +114,19 @@ const fetchList = useCallback(
           scope: canManageAll ? ownerScope : "mine",
         }
       );
+      if (reqId !== requestIdRef.current) return;
 
-      const merged = reset ? list : [...items, ...list];
-
-      setItems(merged);
-      setCursor(next_cursor);
+      const list = Array.isArray(res?.items) ? res.items : [];
+      setItems(reset ? list : [...items, ...list]);
+      setCursor(res?.next_cursor);
     } finally {
-      setLoading(false);
+      if (reqId === requestIdRef.current) {
+        loadingRef.current = false;
+        setLoading(false);
+      }
     }
   },
-  [tab, cursor, items, me, loading, canManageAll, ownerScope]
+  [tab, cursor, items, me, canManageAll, ownerScope]
 );
 
   useEffect(() => {
