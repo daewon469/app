@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import RegionSelectModal from "../components/RegionSelectModal";
 import ScrollNavigator from "../components/ScrollNavigator";
 import { Auth } from "../lib/api";
@@ -18,9 +19,10 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
 );
 
-const TextInput = (props: React.ComponentProps<typeof RNTextInput>) => (
-  <RNTextInput {...props} allowFontScaling={false} />
+const TextInput = React.forwardRef<RNTextInput, React.ComponentProps<typeof RNTextInput>>(
+  (props, ref) => <RNTextInput ref={ref} {...props} allowFontScaling={false} />
 );
+TextInput.displayName = "TextInput";
 // 전화번호 포맷
 const mobile = (value: string) => {
   const digits = value.replace(/[^0-9]/g, "");
@@ -35,6 +37,7 @@ const inputFontSizeStyle = (value: string | null | undefined) => ({
 });
 
 export default function SignupScreen() {
+  const insets = useSafeAreaInsets();
   const [password, setPassword] = useState("");
   const [password_confirm, setPassword_confirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -69,6 +72,8 @@ export default function SignupScreen() {
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<any>(null);
+  const phoneCodeInputRef = useRef<RNTextInput>(null);
+  const autoVerifyKeyRef = useRef<string | null>(null);
   const [contentHeight, setContentHeight] = useState(1);
   const [layoutHeight, setLayoutHeight] = useState(1);
 
@@ -154,7 +159,10 @@ export default function SignupScreen() {
         setPhoneSent(true);
         setPhoneVerified(false);
         setPhoneCode("");
-        Alert.alert("알림", "인증번호를 발송했습니다.");
+        autoVerifyKeyRef.current = null;
+        Alert.alert("알림", "인증번호를 발송했습니다.", [
+          { text: "확인", onPress: () => phoneCodeInputRef.current?.focus() },
+        ]);
         return;
       }
       Alert.alert("오류", "인증번호 발송에 실패했습니다.");
@@ -165,14 +173,18 @@ export default function SignupScreen() {
     }
   };
 
-  const verifyPhoneCode = async () => {
+  const verifyPhoneCode = useCallback(async (opts?: { silentSuccess?: boolean }) => {
     if (!canPhoneVerify) return;
     if (!phoneVerificationId) {
-      Alert.alert("알림", "먼저 인증번호를 발송해주세요.");
+      if (!opts?.silentSuccess) {
+        Alert.alert("알림", "먼저 인증번호를 발송해주세요.");
+      }
       return;
     }
     if (!phoneCode.trim()) {
-      Alert.alert("알림", "인증번호를 입력해 주세요.");
+      if (!opts?.silentSuccess) {
+        Alert.alert("알림", "인증번호를 입력해 주세요.");
+      }
       return;
     }
     try {
@@ -180,7 +192,9 @@ export default function SignupScreen() {
       const res = await Auth.verifyPhoneCode(phoneVerificationId, phoneCode.trim());
       if (res.status === 0 && res.verified) {
         setPhoneVerified(true);
-        Alert.alert("알림", "휴대폰 인증이 완료되었습니다.");
+        if (!opts?.silentSuccess) {
+          Alert.alert("알림", "휴대폰 인증이 완료되었습니다.");
+        }
         return;
       }
       const verifyMsg = resolvePhoneVerifyMessage(res.status);
@@ -194,7 +208,17 @@ export default function SignupScreen() {
     } finally {
       setVerifyingCode(false);
     }
-  };
+  }, [canPhoneVerify, phoneVerificationId, phoneCode]);
+
+  useEffect(() => {
+    const code = phoneCode.replace(/[^0-9]/g, "");
+    if (!canPhoneVerify || phoneVerified || verifyingCode) return;
+    if (!phoneVerificationId || code.length !== 6) return;
+    const key = `${phoneVerificationId}:${code}`;
+    if (autoVerifyKeyRef.current === key) return;
+    autoVerifyKeyRef.current = key;
+    void verifyPhoneCode({ silentSuccess: true });
+  }, [canPhoneVerify, phoneCode, phoneVerified, phoneVerificationId, verifyingCode, verifyPhoneCode]);
 
   const checkUsernameDuplicate = async () => {
     const name = username.trim();
@@ -393,12 +417,23 @@ export default function SignupScreen() {
     alignItems: "center",
   } as const;
 
+  const keyboardOffset = (Platform.OS === "ios" ? 40 : 50) + insets.top;
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.select({ ios: "padding", android: "height" }) as "padding" | "height"}
+      keyboardVerticalOffset={keyboardOffset}
+    >
       <Animated.ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, gap: 12, backgroundColor: colors.background, paddingBottom: 40 }}
+        contentContainerStyle={{
+          padding: 16,
+          gap: 12,
+          backgroundColor: colors.background,
+          paddingBottom: 80 + insets.bottom,
+        }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
@@ -540,6 +575,7 @@ export default function SignupScreen() {
                 setPhoneCode("");
                 setPhoneSent(false);
                 setPhoneVerified(false);
+                autoVerifyKeyRef.current = null;
               }}
               style={{
                 flex: 1,
@@ -575,6 +611,7 @@ export default function SignupScreen() {
             <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>※ 인증번호</Text>
             <View style={inputRowStyle}>
               <TextInput
+                ref={phoneCodeInputRef}
                 placeholder="인증번호 6자리"
                 placeholderTextColor="#666"
                 value={phoneCode}
@@ -588,9 +625,13 @@ export default function SignupScreen() {
                 }}
                 keyboardType="number-pad"
                 maxLength={6}
+                textContentType="oneTimeCode"
+                autoComplete="sms-otp"
+                importantForAutofill="yes"
+                autoCorrect={false}
               />
               <TouchableOpacity
-                onPress={verifyPhoneCode}
+                onPress={() => void verifyPhoneCode()}
                 disabled={verifyingCode || phoneVerified || !phoneCode.trim()}
                 style={{
                   paddingHorizontal: 12,
@@ -680,6 +721,6 @@ export default function SignupScreen() {
         barWidth={4}
         showButtons={false}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
