@@ -432,7 +432,7 @@ export default function SignupScreen() {
           padding: 16,
           gap: 12,
           backgroundColor: colors.background,
-          paddingBottom: 80 + insets.bottom,
+          paddingBottom: 40 + insets.bottom,
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}

@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text as RNText, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const Text = (props: React.ComponentProps<typeof RNText>) => (
   <RNText {...props} allowFontScaling={false} />
@@ -24,6 +25,7 @@ export default function ServiceTermsScreen({
   const [marketingAgree, setMarketingAgree] = useState(false);
   const [contentH, setContentH] = useState(0);
   const [scrollH, setScrollH] = useState(0);
+  const insets = useSafeAreaInsets();
 
   const canContinue = checked;
   // 요청: 약관 화면은 항상 "검은색 글씨"로 보이도록 고정
@@ -64,7 +66,7 @@ export default function ServiceTermsScreen({
       </View>
 
       {/* 동의 체크 및 버튼 */}
-      <View style={styles.actionBox}>
+      <View style={[styles.actionBox, { paddingBottom: 40 + insets.bottom }]}>
         <Pressable
           onPress={() => setChecked((v) => !v)}
           style={styles.checkRow}
@@ -331,7 +333,7 @@ const styles = StyleSheet.create({
   progressDotOn: { borderColor: "#10B981", backgroundColor: "#D1FAE5" },
   progressText: { fontSize: 14, color: "#000000" },
 
-  actionBox: { paddingHorizontal: 12, paddingBottom: 18, gap: 6 },
+  actionBox: { paddingHorizontal: 12, gap: 6 },
   checkRow: {
     flexDirection: "row",
     alignItems: "center",
