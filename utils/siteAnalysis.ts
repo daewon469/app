@@ -14,6 +14,8 @@ export type SiteAnalysisPayload = {
   company_agency?: string | null;
   /** 백엔드 프롬프트가 지원하면 챕터 순서 고정에 사용 */
   chapter_order?: string[];
+  /** 오너 속도 비교. 없으면 상세 화면의 기존 분량 */
+  variant?: "1-1" | "1-2" | "1-3";
 };
 
 export function postToSiteAnalysisPayload(post: Post): SiteAnalysisPayload {
@@ -34,13 +36,14 @@ export function postToSiteAnalysisPayload(post: Post): SiteAnalysisPayload {
 
 export async function requestSiteAnalysis(
   payload: SiteAnalysisPayload,
+  opts?: { timeout?: number },
 ): Promise<{ ok: true; analysis: string } | { ok: false; error: string }> {
   try {
     const { data } = await api.post<{
       ok?: boolean;
       analysis?: string;
       error?: string;
-    }>("/community/ai/site-analysis", payload, { timeout: 60_000 });
+    }>("/community/ai/site-analysis", payload, { timeout: opts?.timeout ?? 60_000 });
     if (!data?.ok || !data.analysis) {
       return { ok: false, error: data?.error || "AI 분석에 실패했습니다." };
     }

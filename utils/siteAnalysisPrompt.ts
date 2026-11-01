@@ -3,16 +3,16 @@ export type SiteAnalysisSection = {
   body: string;
 };
 
-/** AI 분석 챕터 고정 순서 */
+/** AI 분석 챕터 고정 순서. 설계특징·꺾기멘트는 응답 속도를 위해 제외 */
 export const SITE_ANALYSIS_CHAPTER_ORDER = [
   "건축개요",
-  "설계특징",
   "입지/교통",
   "생활/학군",
   "미래가치",
   "투자가치",
-  "꺾기멘트",
 ] as const;
+
+const OMITTED_CHAPTERS = new Set(["설계특징", "꺾기멘트"]);
 
 function cleanAnalysisTitle(raw: string | null): string | null {
   if (!raw) return null;
@@ -52,6 +52,7 @@ function normalizeSectionHeading(heading: string): string {
   const idx = SITE_ANALYSIS_CHAPTER_ORDER.indexOf(
     canonical as (typeof SITE_ANALYSIS_CHAPTER_ORDER)[number],
   );
+  if (idx < 0) return canonical;
   return `${idx + 1}) ${canonical}`;
 }
 
@@ -82,6 +83,8 @@ export function parseSiteAnalysisSections(text: string): {
   const sections: SiteAnalysisSection[] = [];
   let match: RegExpExecArray | null;
   while ((match = sectionRegex.exec(raw)) !== null) {
+    const canonical = matchCanonicalChapter(match[1]);
+    if (canonical && OMITTED_CHAPTERS.has(canonical)) continue;
     const heading = normalizeSectionHeading(match[1].trim());
     const body = match[2]
       .replace(/^\s*-\s*/gm, "")

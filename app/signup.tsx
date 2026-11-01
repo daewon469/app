@@ -2,9 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import * as SecureStore from "../utils/secureStorage";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, KeyboardAvoidingView, Platform, Pressable, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Animated, KeyboardAvoidingView, Platform, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import RegionSelectModal from "../components/RegionSelectModal";
 import ScrollNavigator from "../components/ScrollNavigator";
 import { Auth } from "../lib/api";
 import {
@@ -36,6 +35,10 @@ const inputFontSizeStyle = (value: string | null | undefined) => ({
   fontSize: String(value ?? "").trim() ? 14 : 13,
 });
 
+function GroupDivider() {
+  return <View style={{ height: 1, backgroundColor: "#D9D9D9", marginVertical: 6 }} />;
+}
+
 export default function SignupScreen() {
   const insets = useSafeAreaInsets();
   const [password, setPassword] = useState("");
@@ -52,9 +55,7 @@ export default function SignupScreen() {
   const [originalPhoneNumber, setOriginalPhoneNumber] = useState("");
   const [sendingSms, setSendingSms] = useState(false);
   const [verifyingCode, setVerifyingCode] = useState(false);
-  const [region, setRegion] = useState("");
   const [referralCode, setReferralCode] = useState("");
-  const [regionModalOpen, setRegionModalOpen] = useState(false);
   const params = useLocalSearchParams<{ mode?: string; username?: string; marketing_consent?: string }>();
   const isEditMode = params.mode === "edit";
   const originalUsername = params.username as string | undefined;
@@ -133,7 +134,6 @@ export default function SignupScreen() {
           setPhoneCode("");
           setPhoneSent(false);
           setPhoneVerified(false);
-          setRegion(res.user.region || "");
         } else {
           Alert.alert("오류", "회원 정보를 불러올 수 없습니다.");
         }
@@ -288,10 +288,6 @@ export default function SignupScreen() {
         Alert.alert("알림", "휴대폰 인증을 완료해주세요.");
         return;
       }
-      if (!region.trim()) {
-        Alert.alert("알림", "거주지역을 입력해 주세요!");
-        return;
-      }
     }
 
     if (isEditMode) {
@@ -303,13 +299,11 @@ export default function SignupScreen() {
           name?: string;
           phone_number?: string;
           phone_verification_id?: string;
-          region?: string;
         } = {
           username: username.trim() || undefined,
           name: name.trim() || undefined,
           phone_number: phoneNumber.trim() || undefined,
           phone_verification_id: phoneChanged ? (phoneVerificationId ?? undefined) : undefined,
-          region: region.trim() || undefined,
         };
 
         if (phoneChanged && !phoneVerified) {
@@ -358,7 +352,7 @@ export default function SignupScreen() {
           name.trim() || undefined,
           phoneNumber.trim() || undefined,
           phoneVerificationId ?? undefined,
-          region.trim() || undefined,
+          undefined,
           referralCode.trim() || undefined,
           marketingConsent,
         );
@@ -550,6 +544,8 @@ export default function SignupScreen() {
           </View>
         </View>
 
+        <GroupDivider />
+
         <View>
           <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>※ 성함</Text>
           <TextInput
@@ -649,19 +645,7 @@ export default function SignupScreen() {
           </View>
         )}
 
-        <View>
-          <Text style={{ color: colors.text, fontSize: 15, marginBottom: 6 }}>※ 지역</Text>
-          <Pressable onPress={() => setRegionModalOpen(true)}>
-            <TextInput
-              value={region}
-              placeholder="지역 선택"
-              placeholderTextColor="#666"
-              editable={false}
-              style={[inputStyle, inputFontWeightStyle(region), inputFontSizeStyle(region)]}
-              pointerEvents="none"
-            />
-          </Pressable>
-        </View>
+        {!isEditMode && <GroupDivider />}
 
         {!isEditMode && (
           <View>
@@ -680,15 +664,6 @@ export default function SignupScreen() {
             />
           </View>
         )}
-
-        <RegionSelectModal
-          visible={regionModalOpen}
-          onClose={() => setRegionModalOpen(false)}
-          singleStep
-          onSelect={(province) => {
-            setRegion(province);
-          }}
-        />
 
         <TouchableOpacity
           onPress={submit}

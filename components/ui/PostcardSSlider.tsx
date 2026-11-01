@@ -52,12 +52,21 @@ export default function PostcardSSlider({
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<FlatList<Post>>(null);
   const activeIndexRef = useRef(0);
+  const snappingRef = useRef(false);
+  const wrapTokenRef = useRef(0);
 
   const cardWidth = useMemo(
     () => Math.floor(fullWidth ? windowWidth : windowWidth - listHorizontalPadding * 2),
     [fullWidth, listHorizontalPadding, windowWidth]
   );
   const cardHeight = cardWidth;
+  const loop = posts.length > 1;
+
+  // 앞뒤에 복제 카드를 붙여, 마지막에서 다음으로 밀면 첫 카드로 이어지게 한다.
+  const data = useMemo(() => {
+    if (!loop) return posts;
+    return [posts[posts.length - 1], ...posts, posts[0]];
+  }, [loop, posts]);
 
   const commitIndex = (idx: number) => {
     const next = Math.max(0, Math.min(posts.length - 1, idx));
@@ -66,22 +75,65 @@ export default function PostcardSSlider({
     setActiveIndex(next);
   };
 
+  const jumpToOffset = (offset: number) => {
+    snappingRef.current = true;
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToOffset({ offset, animated: false });
+      requestAnimationFrame(() => {
+        snappingRef.current = false;
+      });
+    });
+  };
+
+  const settle = (rawIndex: number) => {
+    if (!loop) {
+      commitIndex(rawIndex);
+      return;
+    }
+    const count = posts.length;
+    if (rawIndex <= 0) {
+      jumpToOffset(cardWidth * count);
+      commitIndex(count - 1);
+      return;
+    }
+    if (rawIndex >= count + 1) {
+      jumpToOffset(cardWidth);
+      commitIndex(0);
+      return;
+    }
+    commitIndex(rawIndex - 1);
+  };
+
   const onMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (snappingRef.current) return;
     const x = e.nativeEvent.contentOffset.x;
-    commitIndex(Math.round(x / cardWidth));
+    settle(Math.round(x / Math.max(cardWidth, 1)));
   };
 
   useEffect(() => {
     if (!autoPlayMs || posts.length <= 1) return;
 
     const id = setInterval(() => {
-      const next = (activeIndexRef.current + 1) % posts.length;
+      const count = posts.length;
+      const next = (activeIndexRef.current + 1) % count;
       activeIndexRef.current = next;
       setActiveIndex(next);
-      listRef.current?.scrollToIndex({ index: next, animated: true });
+      // 마지막 다음은 뒤쪽 복제(첫 카드)로 넘긴 뒤, 실제 첫 카드 위치로 붙인다.
+      const loopIndex = next === 0 ? count + 1 : next + 1;
+      listRef.current?.scrollToOffset({ offset: cardWidth * loopIndex, animated: true });
+      if (next === 0) {
+        const token = ++wrapTokenRef.current;
+        setTimeout(() => {
+          if (wrapTokenRef.current !== token) return;
+          listRef.current?.scrollToOffset({ offset: cardWidth, animated: false });
+        }, 480);
+      }
     }, autoPlayMs);
 
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      wrapTokenRef.current += 1;
+    };
   }, [autoPlayMs, posts.length, cardWidth]);
 
   if (posts.length === 0) return null;
@@ -90,8 +142,8 @@ export default function PostcardSSlider({
     <View style={{ marginBottom: 8, width: cardWidth, alignSelf: fullWidth ? "stretch" : undefined }}>
       <FlatList
         ref={listRef}
-        data={posts}
-        keyExtractor={(item) => String(item.id)}
+        data={data}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         horizontal
         pagingEnabled
         bounces={false}
@@ -100,6 +152,11 @@ export default function PostcardSSlider({
         decelerationRate="fast"
         disableIntervalMomentum
         nestedScrollEnabled={Platform.OS === "android"}
+        initialScrollIndex={loop ? 1 : 0}
+        onScrollBeginDrag={() => {
+          wrapTokenRef.current += 1;
+        }}
+        initialNumToRender={data.length}
         getItemLayout={(_, index) => ({
           length: cardWidth,
           offset: cardWidth * index,

@@ -1759,6 +1759,30 @@ export default function MyPagePreview() {
                             style={{
                                 flexDirection: "row",
                                 alignItems: "center",
+                                paddingVertical: 10,
+                                borderTopWidth: 1,
+                                borderTopColor: colors.border,
+                            }}
+                            onPress={() => router.push("/aispeedtest")}
+                        >
+                            <Ionicons
+                                name="speedometer-outline"
+                                size={20}
+                                color={colors.primary}
+                                style={{ marginRight: 10 }}
+                            />
+                            <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 15, fontWeight: "bold", color: colors.text }}>
+                                    AI분석 테스트
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={18} color={colors.subText} />
+                        </Pressable>
+
+                        <Pressable
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
                                 paddingTop: 10,
                                 borderTopWidth: 1,
                                 borderTopColor: colors.border,
