@@ -1,10 +1,9 @@
-import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Text as RNText,
+  ScrollView,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,7 +16,7 @@ const Text = (props: React.ComponentProps<typeof RNText>) => (
 
 const VARIANTS = [
   { id: "1-1" as const, label: "1-1", detail: "5개 항목 · 각 4~5줄" },
-  { id: "1-2" as const, label: "1-2", detail: "3개 항목 · 각 7~8줄" },
+  { id: "1-2" as const, label: "1-2", detail: "건축개요, 학군/교통, 투자가치 · 각 7~8줄" },
   { id: "1-3" as const, label: "1-3", detail: "5개 항목 · 각 7~8줄" },
 ];
 
@@ -145,15 +144,8 @@ export default function AiSpeedTestScreen() {
         gap: 12,
       }}
     >
-      <Pressable onPress={() => router.back()} hitSlop={8}>
-        <Text style={{ color: "#4A6CF7", fontWeight: "700" }}>← 내페이지</Text>
-      </Pressable>
       <Text style={{ fontSize: 20, fontWeight: "900", color: "#0B1B3A" }}>AI분석 테스트</Text>
-      <Text style={{ fontSize: 13, color: "#666", lineHeight: 18 }}>
-        같은 구인글에 1-1, 1-2, 1-3을 순서대로 호출합니다. 시간은 버튼을 누른 뒤 결과가 올 때까지입니다.
-        구인글 상세의 AI 분석은 이 화면과 별개로 기존 분량을 유지합니다.
-      </Text>
-
+     
       <View
         style={{
           borderWidth: 1,
@@ -203,7 +195,7 @@ export default function AiSpeedTestScreen() {
         }}
       >
         <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-          {running ? "측정 중" : "세 안 측정"}
+          {running ? "측정 중" : "전체 측정"}
         </Text>
       </Pressable>
 
