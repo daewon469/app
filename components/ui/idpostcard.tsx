@@ -876,6 +876,12 @@ export default function Postcard_detail({ post }: { post: Post }) {
                 <Text style={{ marginTop: 6, fontSize: 12, color: "#888", textAlign: "center" }}>
                   입지, 교통, 인프라 분석을 통해 최고의 분석을 제공해요
                 </Text>
+                <Text style={{ marginTop: 14, fontSize: 14, fontWeight: "700", color: "#0B1B3A", textAlign: "center" }}>
+                  분석은 약 7~8초 걸립니다.
+                </Text>
+                <Text style={{ marginTop: 4, fontSize: 14, fontWeight: "700", color: "#0B1B3A", textAlign: "center" }}>
+                  잠시만 기다려 주세요 ^^
+                </Text>
               </View>
             ) : (
               <ScrollView
